@@ -5,7 +5,7 @@ class Cell
     char state;
     
 public:
-    Cell(char s);
+    explicit Cell(char s);
 
     char getState() const;
     void setStateToDead();

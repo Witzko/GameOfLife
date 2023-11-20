@@ -36,24 +36,6 @@ Matrix::Matrix(int N, float prob_of_life)
     this->matrix = _matrix;
 }
 
-void Matrix::countAliveAndDeadCells(int &alive_count, int &dead_count) const
-{
-    for (const auto &row : this->matrix)
-    {
-        for (const auto &cell : row)
-        {
-            if (cell.isAlive())
-            {
-                alive_count++;
-            }
-            else
-            {
-                dead_count++;
-            }
-        }
-    }
-}
-
 int Matrix::getSize() const {
     return this->matrix.size();
 }

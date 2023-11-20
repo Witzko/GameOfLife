@@ -41,3 +41,21 @@ Generation calculateNextGen(const Generation& current_gen)
 
     return Generation(Matrix{std::move(next_gen_cells)});
 }
+
+void countAliveAndDeadCells(const Generation& gen, int &alive_count, int &dead_count)
+{
+    for (const auto &row : gen.getGeneration().getMatrix())
+    {
+        for (const auto &cell : row)
+        {
+            if (cell.isAlive())
+            {
+                alive_count++;
+            }
+            else
+            {
+                dead_count++;
+            }
+        }
+    }
+}
