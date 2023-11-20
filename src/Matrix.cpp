@@ -36,7 +36,7 @@ Matrix::Matrix(int N, float prob_of_life)
     this->matrix = _matrix;
 }
 
-void Matrix::countAliveAndDeadCells(int &alive_count, int &dead_count)
+void Matrix::countAliveAndDeadCells(int &alive_count, int &dead_count) const
 {
     for (const auto &row : this->matrix)
     {
