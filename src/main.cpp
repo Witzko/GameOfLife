@@ -6,9 +6,9 @@
 
 int main()
 {
-    Generation first_gen{Matrix(16, 0.8)};
+    Generation first_gen{Matrix(16, 0.5)};
     first_gen.printGeneration("first_gen");
-    
+
     int alive_cells{0}, dead_cells{0};
     countAliveAndDeadCells(first_gen, alive_cells, dead_cells);
     std::cout << "First generation \n" "Alive Cells: " << alive_cells << " Dead Cells: " << dead_cells << std::endl;

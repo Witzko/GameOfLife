@@ -20,7 +20,7 @@ Matrix::Matrix(int N, float prob_of_life)
 
         for (int j = 0; j < N; j++)
         {
-            if (uniform_zero_to_one(random_engine) < prob_of_life)
+            if (uniform_zero_to_one(random_engine) > prob_of_life)
             {
                 row.push_back(Cell{'d'});
             }

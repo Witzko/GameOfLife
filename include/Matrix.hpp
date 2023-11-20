@@ -8,7 +8,7 @@ class Matrix
 
 public:
     explicit Matrix(std::vector<std::vector<Cell>> _matrix); // default constructor
-    Matrix(int N, float prob_of_life);               // parameter constructor: constructs matrix of size N x N
+    Matrix(int N, float prob_of_life);               // parameter constructor: constructs matrix of size N x N with a probability of life for the cells
     int getSize() const;
     const std::vector<std::vector<Cell>>& getMatrix() const;
 };
