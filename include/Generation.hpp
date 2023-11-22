@@ -12,6 +12,6 @@ public:
 
   explicit Generation(Matrix _generation);
   const Matrix& getGeneration() const;
-  int getAliveNeighboursCount(const int &left_col_idx, const int &right_col_idx, const int &lower_row_idx, const int &upper_row_idx, const int &row_idx, const int &column_idx) const;
+  int countAliveNeighbours(const int &left_col_idx, const int &right_col_idx, const int &lower_row_idx, const int &upper_row_idx, const int &row_idx, const int &column_idx) const;
   void printGeneration(const std::string& filepath) const;
 };

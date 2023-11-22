@@ -1,2 +1,6 @@
 /.vscode
 /build/*
+/Benchmarks
+/Bin
+/License
+/Redist

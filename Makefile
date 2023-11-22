@@ -1,5 +1,5 @@
-CXX := g++
-CXX_FLAGS := -Werror -Wall -Wextra -g
+CXX := mpicxx
+CXX_FLAGS := -Werror -Wall -Wextra -g # -O3 -march=native -std=c++20
 
 .DEFAULT_GOAL := sequential
 
@@ -9,9 +9,8 @@ OBJECTS := ./build/main.o ./build/Matrix.o ./build/Cell.o ./build/Generation.o .
 sequential: $(OBJECTS)
 	@$(CXX) $(CXX_FLAGS) $(OBJECTS) -o ./build/sequential
 
-
-./build/main.o: ./src/main.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
-	@$(CXX) $(CXX_FLAGS) -c ./src/main.cpp -o ./build/main.o
+./build/main.o: ./src/sequential/main.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
+	@$(CXX) $(CXX_FLAGS) -c ./src/sequential/main.cpp -o ./build/main.o
 
 ./build/functions.o: ./src/functions.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
 	@$(CXX) $(CXX_FLAGS) -c ./src/functions.cpp -o ./build/functions.o

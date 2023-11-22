@@ -115,3 +115,29 @@ public:
 
 The member functions like getter, setter make things a little easier and safer. The alternative is to fill up the std::vector with chars and assign it directly. 
 Also okay I guess... Memory concerns: Does the cell need more memory? No! member functions are not stored in the object but the class definition. Both are 1 byte!
+
+
+Same goes for a MatrixType and Generation consisting of a Matrix.
+
+### Classes
+
+#### Cell
+
+members: char
+member-functions: setAlive(), setDead(), checkIfAlive() ....
+
+#### Matrix
+
+members: std::vector<std::vector<Cell>>
+member-functions: getMatrix(), Parameter Constructor with probability of alive cells etc., default constructor...
+
+#### Generation
+
+members: Matrix
+member-functions: printGeneration(), getGeneration(), countAliveNeighbours() ....
+
+### Exercise 1
+
+Pretty straighforward, we just put an MPI wrapper (MPI_INIT, MPI_FINALIZE) around the code and thats it.
+
+### Exercise 2

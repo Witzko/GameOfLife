@@ -11,7 +11,7 @@ const Matrix &Generation::getGeneration() const
     return generation;
 }
 
-int Generation::getAliveNeighboursCount(const int &left_col_idx, const int &right_col_idx, const int &lower_row_idx, const int &upper_row_idx,  const int&col_idx, const int &row_idx) const
+int Generation::countAliveNeighbours(const int &left_col_idx, const int &right_col_idx, const int &lower_row_idx, const int &upper_row_idx,  const int&col_idx, const int &row_idx) const
 {
 
     int alive_neighbours_count{0};

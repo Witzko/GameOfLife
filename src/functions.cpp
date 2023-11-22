@@ -20,7 +20,7 @@ Generation calculateNextGen(const Generation& current_gen)
         {
             const int left_col_idx = (j - 1 + N) % N;
             int right_col_idx = (j + 1) % N;
-            int alive_neighbours_count = current_gen.getAliveNeighboursCount(left_col_idx, right_col_idx, lower_row_idx, upper_row_idx, j, i);
+            int alive_neighbours_count = current_gen.countAliveNeighbours(left_col_idx, right_col_idx, lower_row_idx, upper_row_idx, j, i);
             bool isAlive = current_gen.getGeneration().getMatrix()[i][j].isAlive();
 
             if (!isAlive && alive_neighbours_count == 3)
