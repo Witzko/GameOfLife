@@ -136,6 +136,11 @@ member-functions: getMatrix(), Parameter Constructor with probability of alive c
 members: Matrix
 member-functions: printGeneration(), getGeneration(), countAliveNeighbours() ....
 
+
+### (Free) Functions -> calculateNextGen()
+
+We 
+
 ### Exercise 1
 
 Pretty straighforward, we just put an MPI wrapper (MPI_INIT, MPI_FINALIZE) around the code and thats it.

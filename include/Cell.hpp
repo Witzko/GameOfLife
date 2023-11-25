@@ -11,4 +11,6 @@ public:
     void setStateToDead();
     void setStateToAlive();
     bool isAlive() const;
+    
+    bool operator==(const Cell& other) const;
 };

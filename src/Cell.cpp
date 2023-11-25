@@ -19,9 +19,15 @@ void Cell::setStateToAlive()
 
 bool Cell::isAlive() const
 {
-    if (this->state == 'a'){
+    if (this->state == 'a')
+    {
         return true;
     }
-    
+
     return false;
+}
+
+bool Cell::operator==(const Cell &other) const
+{
+    return state == other.state;
 }
