@@ -1,6 +1,5 @@
 #pragma once
 #include "Generation.hpp"
-#include <mpi.h>
 
 /**
     Calculates the next Generation, based on the current Generation in a single process

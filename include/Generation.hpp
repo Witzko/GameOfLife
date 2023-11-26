@@ -36,7 +36,7 @@ public:
 
     @return Matrix
   */
-  Matrix &Generation::getGeneration();
+  Matrix &getGeneration();
 
   /**
     Getter of the underlying Matrix member of the Generation object

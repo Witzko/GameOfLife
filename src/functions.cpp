@@ -1,6 +1,7 @@
 #include "../include/functions.hpp"
 #include <numeric>
 #include <iostream>
+#include <mpi.h>
 
 Generation calculateNextGenSequentially(const Generation &current_gen)
 {
