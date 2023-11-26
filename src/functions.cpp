@@ -50,7 +50,7 @@ void calculateNextGenParallel(const Generation &current_gen, Generation &next_ge
     MPI_Comm_rank(cart_comm, &rank);
     MPI_Comm_size(cart_comm, &size);
 
-    int ndim = 2;
+    const int ndim = 2;
     int coords[ndim];
     int periods[ndim] = {1, 1};
 

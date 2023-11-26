@@ -28,7 +28,7 @@ int main(int argc, char **argv)
     current_gen.printGeneration("first_gen");
 #endif
 
-    Generation next_gen = current_gen; //tmp same values as first gen for first calculation
+    Generation next_gen = current_gen; // tmp same values as first gen for first calculation
 
     /*
         MPI Section Start:
@@ -65,30 +65,37 @@ int main(int argc, char **argv)
     }
 #endif
 
-        double start_time, end_time;
-        std::vector<double> times;
+    double start_time, end_time;
+    std::vector<double> times;
 
-        for (int i = 0; i < num_of_repetitions; i++)
+    MPI_Barrier(cart_comm);
+    for (int i = 0; i < num_of_repetitions; i++)
+    {
+        start_time = MPI_Wtime();
+
+        calculateNextGenParallel(current_gen, next_gen, cart_comm);
+
+        MPI_Barrier(cart_comm); // Träff said this is kind of okay in the lecture, but he would prefer a solution without two MPI Barriers but just one before the for loop. 
+                                // Stuff to think about when implementing Exercise 3 + 4 ...
+        end_time = MPI_Wtime();
+        times.push_back(end_time - start_time);
+
+#ifdef DEBUG
+        MPI_Barrier(cart_comm);
+        if (rank == 0)
         {
-            start_time = MPI_Wtime();
-
-            calculateNextGenParallel(current_gen, next_gen, cart_comm);
-
-            end_time = MPI_Wtime();
-            times.push_back(end_time - start_time);
-
-    #ifdef DEBUG
             Generation next_gen_sequential = calculateNextGenSequentially(current_gen);
             if (!areGenerationsEqual(next_gen, next_gen_sequential))
             {
-                std::cout << "The sequential and parallel solution are not the same! Check the /debug folder."
-                next_gen.printGeneration("parallel_gen");
+                std::cout << "The sequential and parallel solution are not the same! Check the /debug folder." next_gen.printGeneration("parallel_gen");
                 next_gen_sequential.printGeneration("sequential_gen");
             }
-    #endif
-
-            current_gen = next_gen;
         }
+        MPI_Barrier(cart_comm);
+#endif
+
+        current_gen = next_gen;
+    }
 
     MPI_Comm_free(&cart_comm);
     MPI_Finalize();

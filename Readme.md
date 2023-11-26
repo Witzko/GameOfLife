@@ -127,40 +127,67 @@ As stated in [1], chapter 3.2.4, an MPI program can be compiled with a normal C/
 
 #### Cell (Class)
 
-**members:** char
-**member-functions:** setAlive(), setDead(), checkIfAlive() ....
+**members:** char state;
+**member-functions:** setStateAlive(), setStateToDead(), getState(), isAlive(), Constructor
 
 #### Matrix (Class)
 
 **members:** std::vector<std::vector<Cell>>
-**member-functions:** getMatrix(), Parameter Constructor with probability of alive cells etc., default constructor...
+**member-functions:** getMatrix(), Parameter Constructor with probability of alive cells etc., default constructor, getSize()
 
 #### Generation (Class)
 
 **members:** Matrix
-**member-functions:** printGeneration(), getGeneration(), countAliveNeighbours() ....
+**member-functions:** printGeneration(), getGeneration(), countAliveNeighbours(), Constructors, countAliveNeighbours()
 
 
-#### calculateNextGenSequentially (Function)
+#### Functions
+
+There are also a couple of free functions. The two most important ones are shortly mentioned in the following.
+
+**calculateNextGenSequentially()**
 
 **input:** Generation object (reference)
 **output:** Generation object
 **algorithm:** Two for-loops which iterate over the matrix and count for each cell the alive neighbours of the 8 neighbours. Based on the conditions of the game of life
             the cell lives or dies. The only slightly tricky part is to "fold" the matrix, so making sure the upper_row, lower_row, left_col, right_col values are correct.
 
-#### calculateNextGenParallel (Function)
+**calculateNextGenParallel**
 
 **input:** Generation object (reference), num_of_processes
 **output:** Generation object
-**algorithm:** Basics are similar to sequential version. We retrieve a sub-Matrix (getSubMatrix()) from the generation, in which the rows and columns are based on the process number. This matrix is then calculated by the respective process with MPI communication (more details are provided in the following chapters) and at the end, the new Generation is returned.
+**algorithm:** Basics are similar to sequential version. We identify a submatrix from the generation, in which the rows and columns are based on the process number. This matrix is then calculated by the respective process with MPI communication (more details are provided in the following chapters) and at the end, the new Generation, which was passed as an input ref argument, is successfully calculated.
 
-#### areGenerationsEqual (Function)
+Other than that we have some helper functions like **areGenerationsEqual()**, **countAliveAndDeadCells**, **getSubMatrix** (...) which are all used either for debug purposes or inside one of the functions from above.
 
-#### getSubMatrix (Function)
+### 2.3 Optimizations, Asymptotic complexity
 
-### 2.3 Exercise 1
+There are two main optimization areas:
+    - performance (speed)
+    - memory efficiency
+
+**Performance**:
+
+The performance of the program can be influenced by the choice of data-structures and algorithms. std::vector is a highly efficient, very robust and tested data-structure from the std::library. We use modern c++ move-semantics and pass-by-reference whereever applicable, to avoid unnecessary, expensive copies of big data.
+
+Compiler flags are also important. E.g. -O3 -march=native
+
+**Memory Efficiency**:
+
+We decided to use a short C data-type *char*. This is space-efficient, but a single bit in a machine word would suffice since we only need true/false (dead/alive). This overhead could have been reduced, but needs more time and careful planning.
+
+We at most keep two generations, meaning two NxN matrizes, in memory.
+
+**Asymptotic Complexity, runtime**
+
+We iterate over two for loops (in the sequential variant) which would be a time complexity of O(n^2). However, we also need to check for each Cell the 8 neighbours.
+In regards to the runtime: The runtime depends primarily depends on the size of the matrix.
+
+### 2.4 Exercise 1
 
 *The entry point for the first, sequential MPI implementation can be found in src/sequential/main.cpp*
+
+The first exercise is mostly the implementation of the basics which were mentioned in Chapters 2.1 -2.3 above, but in the following we demonstrate how we initialized and used our Classes and functions with MPI for the sequential solution.
 
 **Step 1:** We pass 3 command line arguments to the program: <matrix_dim_N> <prob_of_life> <number_of_repetitions>
 **Step 2:** We initialize the first Generation based on the input parameters (dim N and probability of Life)
@@ -214,7 +241,9 @@ The times taken by MPI_WTime() are averaged later, and we store it in a std::vec
 
 We call the executable with *mpirun 1 ./build/sequential <matrix_dim_N> <prob_of_life> <number_of_repetitions>*
 
-### 2.4 Exercise 2
+### 2.5 Exercise 2
+
+*The entry point for the second, parallel MPI implementation can be found in src/parallel/main.cpp*
 
 For exercise 2, one of the main tasks is to organize the given processes in a structured way. For that purpose a Cartesian communicator will be used. 
 The task is implemented with inspiration from [1], Chapter 3.2.8, which covers Cartesian communicators. The input arguments to our program stay the same as in Exercise 1,
@@ -270,11 +299,68 @@ Rank 3 has coordinates (1, 1)
 "
 which is exactly the outcome what we want.
 
-The next task is to split up the 
+The next task is to split up the Generation in specific parts for the processes. We use our function calculateNextGenParallel() here:
 
-### 2.5 Exercise 3
+------------------------------------------------------------------------------------------
+    void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm)
+    {
 
-### 2.5 Exercise 4
+        int N = current_gen.getGeneration().getSize();
+
+        int dims[2];
+        int rank, size;
+        MPI_Comm_rank(cart_comm, &rank);
+        MPI_Comm_size(cart_comm, &size);
+
+        const int ndim = 2;
+        int coords[ndim];
+        int periods[ndim] = {1, 1};
+
+        MPI_Cart_get(cart_comm, ndim, dims, periods, coords);
+
+        int num_local_rows = N / dims[0];
+        int num_local_cols = N / dims[1];
+
+        int start_row = coords[0] * num_local_rows;
+        int start_col = coords[1] * num_local_cols;
+
+        int end_row = (coords[0] + 1) * num_local_rows - 1;
+        int end_col = (coords[1] + 1) * num_local_cols - 1;
+
+        ....
+    }
+------------------------------------------------------------------------------------------
+
+As one can see, we pass a reference from our newly created cart_comm to the function, as well as a reference to the current_generation and next_generation.
+There are never more than two generations in memory, since they go out of scope, or are explicitly dereferenced (see main function). Within our function, we use the functions MPI_Comm_rank and MPI_Comm_size to retrieve the rank and size of the function-calling process. This then is used to get the coords of the process. With the
+coords we can calculate the local start_row, end_row, start_col and end_col of the submatrix dynamically. 
+
+This basically is it. We generated a Cartesian Communicator and used the grid to determine the sub-Matrix for each process.
+
+Lastly we want to demonstrate our way of checking the sequential vs the parallel solution:
+
+------------------------------------------------------------------------------------------
+    #ifdef DEBUG
+            MPI_Barrier(cart_comm);
+            if (rank == 0)
+            {
+                Generation next_gen_sequential = calculateNextGenSequentially(current_gen);
+                if (!areGenerationsEqual(next_gen, next_gen_sequential))
+                {
+                    std::cout << "The sequential and parallel solution are not the same! Check the /debug folder." next_gen.printGeneration("parallel_gen");
+                    next_gen_sequential.printGeneration("sequential_gen");
+                }
+            }
+            MPI_Barrier(cart_comm);
+    #endif
+------------------------------------------------------------------------------------------
+
+The code is only executed by the process with rank == 0, and we after calculated the sequential solution for the next Generation, the function areGenerationsEqual is 
+used to compare the two std::vector<std::vector<Cell>>.
+
+### 2.6 Exercise 3
+
+### 2.7 Exercise 4
 
 ## 3. Benchmarking
 
