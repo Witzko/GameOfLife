@@ -20,7 +20,7 @@ debug: sequential parallel
 	@$(CXX) $(CXX_FLAGS) -c ./src/sequential/main.cpp -o ./build/main_sequential.o
 
 ./build/main_parallel.o: ./src/parallel/main.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
-	@$(CXX) $(CXX_FLAGS) -c ./src/sequential/main.cpp -o ./build/main_parallel.o
+	@$(CXX) $(CXX_FLAGS) -c ./src/parallel/main.cpp -o ./build/main_parallel.o
 
 ./build/functions.o: ./src/functions.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
 	@$(CXX) $(CXX_FLAGS) -c ./src/functions.cpp -o ./build/functions.o

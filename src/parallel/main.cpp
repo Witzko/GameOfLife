@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 
     int N = std::atoi(argv[1]);
     float prob_of_life = std::atof(argv[2]);
-    int num_of_repetitions = std::atoi(argv[3]);
+    //int num_of_repetitions = std::atoi(argv[3]);
 
     Generation current_gen{Matrix(N, prob_of_life)};
 
