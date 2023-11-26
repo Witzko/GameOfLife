@@ -46,10 +46,7 @@ int main(int argc, char **argv)
     {
         start_time = MPI_Wtime();
 
-        if (rank == 0)
-        {
-            next_gen = calculateNextGenSequentially(current_gen);
-        }
+        next_gen = calculateNextGenSequentially(current_gen);
 
         end_time = MPI_Wtime();
         times.push_back(end_time - start_time);

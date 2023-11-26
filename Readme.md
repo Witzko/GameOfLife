@@ -119,6 +119,10 @@ Also okay I guess... Memory concerns: Does the cell need more memory? No! member
 
 Same goes for a MatrixType and Generation consisting of a Matrix.
 
+**Compiling**
+
+As stated in [1], chapter 3.2.4, an MPI program can be compiled with a normal C/C++ compiler and a wrapper mpicc/mpicxx. We use mpicxx (mpic++ is the same thing).
+
 ### 2.2 Classes and functions
 
 #### Cell (Class)
@@ -162,7 +166,7 @@ Same goes for a MatrixType and Generation consisting of a Matrix.
 **Step 2:** We initialize the first Generation based on the input parameters (dim N and probability of Life)
 
 ------------------------------------------------------------------------------------------
-Generation current_gen{Matrix(N, prob_of_life)};
+    Generation current_gen{Matrix(N, prob_of_life)};
 ------------------------------------------------------------------------------------------
 
 **Step 3:** We initialize MPI. For that we follow the script [1], page 134 - 136.
@@ -182,10 +186,7 @@ Generation current_gen{Matrix(N, prob_of_life)};
     {
         start_time = MPI_Wtime();
 
-        if (rank == 0)
-        {
-            next_gen = calculateNextGenSequentially(current_gen);
-        }
+        next_gen = calculateNextGenSequentially(current_gen);
 
         end_time = MPI_Wtime();
         times.push_back(end_time - start_time);
@@ -211,9 +212,54 @@ The times taken by MPI_WTime() are averaged later, and we store it in a std::vec
     std::cout << "Average calculation time per generation: " << averageVectorElements(times) << std::endl;
 ------------------------------------------------------------------------------------------
 
+We call the executable with *mpirun 1 ./build/sequential <matrix_dim_N> <prob_of_life> <number_of_repetitions>*
 
 ### 2.4 Exercise 2
 
+For exercise 2, one of the main tasks is to organize the given processes in a structured way. For that purpose a Cartesian communicator will be used. 
+The task is implemented with inspiration from [1], Chapter 3.2.8, which covers Cartesian communicators. The input arguments to our program stay the same as in Exercise 1,
+the number of processes is retrieved from the integer given at mpirun <num_of_processes> (...).
+
+The generic structure of the cartesian communicator creation function is:
+
+------------------------------------------------------------------------------------------
+    int MPI_Cart_create(MPI_Comm comm, int ndims, const int dims[], const int periods[], int reorder, MPI_Comm *cartcomm);
+------------------------------------------------------------------------------------------
+
+*Input arguments are*:
+
+**comm**: The "base" communicator. MPI_COMM_WORLD in our case.
+**ndim**: Number of dimensions: 2 in our case for our NxN Matrix
+**dims**: The size of the dimensions, in our case we choose to distribute the processes evenly in a 2dim grid (see 1.1 for the outline)
+**Periods**: From [1] we know that "The periods array is a Boolean (0/1) array indicating whether the grid is periodic in the ith dimension", therefore we should initialize it with.
+**Reorder**: We can experiment with the reorder flag, which is used so that MPI reorders the processes in a, POTENTIALLY, more efficient fashion.
+**cartcomm**: The cartcomm gets returned as a pointer. We use a reference here.
+
+This leads to our implementation:
+
+------------------------------------------------------------------------------------------
+    MPI_Init(&argc, &argv);
+
+    int rank, size;
+    const int ndim = 2;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    assert(0 <= rank && rank < size);
+
+    int dims[ndim] = {0, 0};
+    MPI_Dims_create(size, 2, dims);
+
+    MPI_Comm cart_comm;
+    int periods[ndim] = {1, 1};
+    int reorder = 1;
+    MPI_Cart_create(MPI_COMM_WORLD, ndim, dims, periods, reorder, &cart_comm);
+    assert(cart_comm!=MPI_COMM_NULL);
+
+    int coords[ndim];
+    MPI_Cart_coords(cart_comm, rank, ndim, coords);
+------------------------------------------------------------------------------------------
+
+*For setting up Cartesian communicators over an existing communicator of size p (that is, with p MPI processes), the MPI_Dims_create function can be helpful for factoring p into d factors that are close to each other.* [1]. We use that to create the dimensions based on the size of MPI_COMM_WORLD (which ultimately just is the number of processes). MPI_Cart_coords is useful to get the cartesian coordinates for each process in the grid
 
 ### 2.5 Exercise 3
 
