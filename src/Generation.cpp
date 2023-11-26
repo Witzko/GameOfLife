@@ -2,47 +2,21 @@
 #include <fstream>
 #include <iostream>
 
-/**
- Default Constructor
- Constructs the Generation object from a Matrix object
- @param _generation Matrix object
- @return Generation object
-*/
 Generation::Generation(Matrix _generation) : generation(_generation)
 {
 }
 
-/**
- Gets the Matrix  of the Generation object
 
- @return Matrix
-*/
 const Matrix &Generation::getGeneration() const
 {
     return generation;
 }
 
-/**
- Gets the underlying Matrix member of the Generation object
-
- @return Matrix member
-*/
 const std::vector<std::vector<Cell>> &Generation::getGenerationCells() const
 {
     return generation.getMatrix();
 }
 
-/**
- Counts Alive Neighbours of cell. Each cell has 8 neighbours in the Grid
-
- @param left_col_idx Left col index
- @param right_col_idx Right col index
- @param lower_row_idx Lower row index
- @param upper_row_idx Upper col index
- @param col_idx col index
- @param row_idx row index
- @return integer alive count
-*/
 int Generation::countAliveNeighbours(const int &left_col_idx, const int &right_col_idx, const int &lower_row_idx, const int &upper_row_idx, const int &col_idx, const int &row_idx) const
 {
 
@@ -62,12 +36,6 @@ int Generation::countAliveNeighbours(const int &left_col_idx, const int &right_c
     return alive_neighbours_count;
 }
 
-/**
- Prints the Generation Object
-
- @param filename takes a filename without filetype ending
- @return void
-*/
 void Generation::printGeneration(const std::string &filename) const
 {
     std::ofstream file("./debug/" + filename + ".csv");

@@ -4,12 +4,21 @@ CXX_FLAGS := -Werror -Wall -Wextra -g # -O3 -march=native -std=c++20
 .DEFAULT_GOAL := sequential
 
 # List of object files
-OBJECTS := ./build/main.o ./build/Matrix.o ./build/Cell.o ./build/Generation.o ./build/functions.o
+OBJECTS_SEQUENTIAL := ./build/main_sequential.o ./build/Matrix.o ./build/Cell.o ./build/Generation.o ./build/functions.o
+OBJECTS_PARALLEL := ./build/main_parallel.o ./build/Matrix.o ./build/Cell.o ./build/Generation.o ./build/functions.o
 
-sequential: $(OBJECTS)
-	@$(CXX) $(CXX_FLAGS) $(OBJECTS) -o ./build/sequential
+sequential: $(OBJECTS_SEQUENTIAL)
+	@$(CXX) $(CXX_FLAGS) $(OBJECTS_SEQUENTIAL) -o ./build/sequential
 
-./build/main.o: ./src/sequential/main.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
+parallel: $(OBJECTS_PARALLEL)
+	@$(CXX) $(CXX_FLAGS) $(OBJECTS_PARALLEL) -o ./build/parallel
+
+
+
+./build/main_sequential.o: ./src/sequential/main.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
+	@$(CXX) $(CXX_FLAGS) -c ./src/sequential/main.cpp -o ./build/main.o
+
+./build/main_parallel.o: ./src/parallel/main.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
 	@$(CXX) $(CXX_FLAGS) -c ./src/sequential/main.cpp -o ./build/main.o
 
 ./build/functions.o: ./src/functions.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp

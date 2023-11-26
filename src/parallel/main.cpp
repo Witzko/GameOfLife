@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <mpi.h>
+#include <cassert>
 #include "../../include/Matrix.hpp"
 #include "../../include/Generation.hpp"
 #include "../../include/functions.hpp"
@@ -8,34 +9,68 @@
 int main(int argc, char **argv)
 {
 
-    int number_of_processes = 1;
+    if (argc != 4)
+    {
+        std::cerr << "Usage: " << argv[0] << " <matrix_dim_N> <prob_of_life> <number_of_repetitions>\n";
+        return 1;
+    }
+
+    int N = std::atoi(argv[1]);
+    float prob_of_life = std::atof(argv[2]);
+    int number_of_repetitions = std::atoi(argv[3]);
+
+    /*
+        Initialization:
+    */
+    Generation current_gen{Matrix(N, prob_of_life)};
+    current_gen.printGeneration("first_gen");
+
+    Generation next_gen{};
+
+    /*
+        MPI Section Start:
+    */
     MPI_Init(&argc, &argv);
 
-    int rank;
+    int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    assert(0<=rank&&rank<size);
 
-    if (rank == 0)
+    double start_time, end_time;
+    std::vector<double> times;
+
+    for (int i = 0; i < number_of_repetitions; i++)
     {
-        Generation first_gen{Matrix(16, 0.5)};
-        first_gen.printGeneration("first_gen");
-        int alive_cells{0};
-        int dead_cells{0};
-        countAliveAndDeadCells(first_gen, alive_cells, dead_cells);
-        std::cout << "First generation \n"
-                     "Alive Cells: "
-                  << alive_cells << " Dead Cells: " << dead_cells << std::endl;
+        start_time = MPI_Wtime();
 
-        Generation next_gen = calculateNextGenParallel(first_gen, number_of_processes);
-        next_gen.printGeneration("next_gen");
-        alive_cells = 0;
-        dead_cells = 0;
-        countAliveAndDeadCells(next_gen, alive_cells, dead_cells);
-        std::cout << "Second generation \n"
-                     "Alive Cells: "
-                  << alive_cells << " Dead Cells: " << dead_cells << std::endl;
+        if (rank == 0)
+        {
+            next_gen = calculateNextGenSequentially(current_gen);
+        }
+
+        end_time = MPI_Wtime();
+        times.push_back(end_time - start_time);
+
+        current_gen = next_gen;
     }
 
     MPI_Finalize();
+    /*
+        MPI Section End
 
+        Post Processing Start
+    */
+    next_gen.printGeneration("last_gen"); // DEBUG
+
+    int alive_cells{0};
+    int dead_cells{0};
+    countAliveAndDeadCells(current_gen, alive_cells, dead_cells);
+    std::cout << "Last generation \n"
+                 "Alive Cells: "
+              << alive_cells << " Dead Cells: " << dead_cells << std::endl;
+
+    
+    std::cout << "Average calculation time per generation: " << averageVectorElements(times) << std::endl;
     return 0;
 }

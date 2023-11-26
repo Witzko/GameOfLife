@@ -2,26 +2,12 @@
 #include <random>
 #include <memory>
 
-/**
- Default Constructor
- Constructs a matrix given a std::vector<std::vector<Cell>>
-
- @param _matrix The Matrix member
- @return Matrix Object
-*/
+Matrix::Matrix() {};
 Matrix::Matrix(std::vector<std::vector<Cell>> _matrix)
 {
     this->matrix = _matrix;
 }
 
-/**
- Parameter Constructor
- Constructs a matrix of size NxN and the grid of cells with a certain probability of being dead or alive for each cell
-
- @param N Matrix dimension NxN
- @param prob_of_life Probability of individual cells being alive
- @return Matrix Object
-*/
 Matrix::Matrix(int N, float prob_of_life)
 {
 
@@ -51,19 +37,12 @@ Matrix::Matrix(int N, float prob_of_life)
     this->matrix = _matrix;
 }
 
-/**
-  Returns the Size of the Matrix
-  @return Size of Matrix
-*/
+
 int Matrix::getSize() const
 {
     return this->matrix.size();
 }
 
-/**
-  Getter Function of the matrix class
-  @return Matrix member
-*/
 const std::vector<std::vector<Cell>> &Matrix::getMatrix() const
 {
     return matrix;
