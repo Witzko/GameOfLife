@@ -40,17 +40,22 @@ Generation calculateNextGenSequentially(const Generation &current_gen)
     return Generation(Matrix{std::move(next_gen_cells)});
 }
 
-void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, const MPI_Comm &cart_comm)
+void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm)
 {
 
     int N = current_gen.getGeneration().getSize();
 
     int dims[2];
-    MPI_Cart_get(cart_comm, 2, dims, nullptr, nullptr);
-
-    int rank, coords[2];
+    int rank, size;
     MPI_Comm_rank(cart_comm, &rank);
-    MPI_Cart_coords(cart_comm, rank, 2, coords);
+    MPI_Comm_size(cart_comm, &size);
+
+    int ndim = 2;
+    int coords[ndim];
+    int periods[ndim] = {1, 1};
+
+    // Get Cartesian coordinates of the current process
+    MPI_Cart_get(cart_comm, ndim, dims, periods, coords);
 
     int num_local_rows = N / dims[0];
     int num_local_cols = N / dims[1];
@@ -64,7 +69,9 @@ void calculateNextGenParallel(const Generation &current_gen, Generation &next_ge
 
     std::cout << "Rank " << rank << " has coordinates (" << coords[0] << ", " << coords[1] << ")" << 
     "and start_row, end_row, start_col, end_col " << start_row << end_row << start_col << end_col << std::endl;
-
+    
+    char dummy = next_gen.getGenerationCells()[0][0].getState();
+    std::cout << dummy << std::endl;
     /*      
             ### Exercise 3 + 4  ###
             

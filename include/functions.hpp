@@ -1,5 +1,6 @@
 #pragma once
 #include "Generation.hpp"
+#include <mpi.h>
 
 /**
     Calculates the next Generation, based on the current Generation in a single process
@@ -16,7 +17,7 @@ Generation calculateNextGenSequentially(const Generation &current_gen);
     @param num_of_processes number of processes
     @return Generation Object
 */
-void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, const MPI_Comm &cart_comm);
+void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm);
 
 /**
     Iterates over the grid of a generation and increments the counters correspondingly
