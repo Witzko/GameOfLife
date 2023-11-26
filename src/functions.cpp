@@ -40,7 +40,7 @@ Generation calculateNextGenSequentially(const Generation &current_gen)
     return Generation(Matrix{std::move(next_gen_cells)});
 }
 
-void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm)
+void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, const MPI_Comm &cart_comm)
 {
 
     int N = current_gen.getGeneration().getSize();
