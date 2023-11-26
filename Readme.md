@@ -1,7 +1,14 @@
 # HPC Assignment 1: Game of Life Stencil
 **2023 TU WIEN, Group Project by Group 16**
 
-In the following, we discuss general ideas on how to implement the project, e.g. which datatypes we use and which classes we define.
+This is the HPC Project from WS23/24 of Group 16.
+
+**Members of Group 16**:
+    - Peter Diem,
+    - Adam
+    - Markus Witzko, 11709272
+
+In the following, we discuss general ideas on how to implement the project, discuss the exercises in detail, talk about the benchmark and finally, interpret the results.
 
 ## 1. Task description
 
