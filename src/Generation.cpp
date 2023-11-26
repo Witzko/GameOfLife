@@ -6,14 +6,22 @@ Generation::Generation(Matrix _generation) : generation(_generation)
 {
 }
 
-
 const Matrix &Generation::getGeneration() const
+{
+    return generation;
+}
+
+Matrix &Generation::getGeneration()
 {
     return generation;
 }
 
 const std::vector<std::vector<Cell>> &Generation::getGenerationCells() const
 {
+    return generation.getMatrix();
+}
+
+std::vector<std::vector<Cell>> &Generation::getGenerationCells() {
     return generation.getMatrix();
 }
 

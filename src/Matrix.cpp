@@ -47,3 +47,8 @@ const std::vector<std::vector<Cell>> &Matrix::getMatrix() const
 {
     return matrix;
 }
+
+std::vector<std::vector<Cell>> &Matrix::getMatrix()
+{
+    return matrix;
+}

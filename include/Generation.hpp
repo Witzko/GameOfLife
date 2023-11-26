@@ -9,13 +9,12 @@ class Generation
   Matrix generation;
 
 public:
-
   /**
     Default Constructor
 
     @return Generation object
   */
-  Generation() {};
+  Generation(){};
 
   /**
     Constructs the Generation object from a Matrix object
@@ -33,11 +32,25 @@ public:
   const Matrix &getGeneration() const;
 
   /**
-    Gets the underlying Matrix member of the Generation object
+     Non-const getter of the Matrix of the Generation object
+
+    @return Matrix
+  */
+  Matrix &Generation::getGeneration();
+
+  /**
+    Getter of the underlying Matrix member of the Generation object
 
     @return Matrix member
   */
   const std::vector<std::vector<Cell>> &getGenerationCells() const;
+
+  /**
+    non-const Getter of the underlying Matrix member of the Generation object
+
+    @return Matrix member
+  */
+  std::vector<std::vector<Cell>> &getGenerationCells();
 
   /**
     Counts Alive Neighbours of cell. Each cell has 8 neighbours in the Grid

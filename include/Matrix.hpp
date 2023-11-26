@@ -37,8 +37,14 @@ public:
     int getSize() const;
 
     /**
-        Getter Function of the matrix class
+        const Getter Function of the matrix class
         @return Matrix member
     */
     const std::vector<std::vector<Cell>> &getMatrix() const;
+
+     /**
+        non-const Getter Function of the matrix class
+        @return Matrix member
+    */
+    std::vector<std::vector<Cell>> &getMatrix();
 };

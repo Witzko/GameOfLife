@@ -1,5 +1,6 @@
 #include "../include/functions.hpp"
 #include <numeric>
+#include <iostream>
 
 Generation calculateNextGenSequentially(const Generation &current_gen)
 {
@@ -38,43 +39,44 @@ Generation calculateNextGenSequentially(const Generation &current_gen)
     return Generation(Matrix{std::move(next_gen_cells)});
 }
 
-// Generation calculateNextGenParallel(const Generation &current_gen, const MPI_Comm& cart_comm)
-// {
+void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm)
+{
 
-//     int N = current_gen.getGeneration().getSize();
-//     std::vector<std::vector<Cell>> next_gen_cells;
+    int N = current_gen.getGeneration().getSize();
 
-//     for (int i = 0; i < N; ++i)
-//     {
-//         int upper_row_idx = (i - 1 + N) % N;
-//         int lower_row_idx = (i + 1) % N;
-//         std::vector<Cell> next_gen_rows;
+    int dims[2];
+    MPI_Cart_get(cart_comm, 2, dims, nullptr, nullptr);
 
-//         for (int j = 0; j < N; ++j)
-//         {
-//             const int left_col_idx = (j - 1 + N) % N;
-//             int right_col_idx = (j + 1) % N;
-//             int alive_neighbours_count = current_gen.countAliveNeighbours(left_col_idx, right_col_idx, lower_row_idx, upper_row_idx, j, i);
-//             bool isAlive = current_gen.getGenerationCells()[i][j].isAlive();
+    int rank, coords[2];
+    MPI_Comm_rank(cart_comm, &rank);
+    MPI_Cart_coords(cart_comm, rank, 2, coords);
 
-//             if (!isAlive && alive_neighbours_count == 3)
-//             {
-//                 next_gen_rows.push_back(Cell{'a'});
-//             }
-//             else if (isAlive && (alive_neighbours_count == 3 || alive_neighbours_count == 2))
-//             {
-//                 next_gen_rows.push_back(Cell('a'));
-//             }
-//             else
-//             {
-//                 next_gen_rows.push_back(Cell{'d'});
-//             }
-//         };
-//         next_gen_cells.push_back(std::move(next_gen_rows));
-//     }
+    int num_local_rows = N / dims[0];
+    int num_local_cols = N / dims[1];
 
-//     return Generation(Matrix{std::move(next_gen_cells)});
-// }
+    int start_row = coords[0] * num_local_rows;
+    int start_col = coords[1] * num_local_cols;
+
+    int end_row = (coords[0] + 1) * num_local_rows - 1;
+    int end_col = (coords[1] + 1) * num_local_cols - 1;
+
+
+    std::cout << "Rank " << rank << " has coordinates (" << coords[0] << ", " << coords[1] << ")" << 
+    "and start_row, end_row, start_col, end_col " << start_row << end_row << start_col << end_col << std::endl;
+
+    /*      
+            ### Exercise 3 + 4  ###
+            
+            My boyz take over and can start implementing the logic here
+
+            Note that you can do similar stuff like in the sequential version:
+
+            just set the state inside the for loops with next_gen.getGenerationCells()[i][j].setStateToAlive();
+
+    */
+
+    
+}
 
 void countAliveAndDeadCells(const Generation &gen, int &alive_count, int &dead_count)
 {

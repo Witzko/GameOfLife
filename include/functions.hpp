@@ -17,7 +17,7 @@ Generation calculateNextGenSequentially(const Generation &current_gen);
     @param num_of_processes number of processes
     @return Generation Object
 */
-// Generation calculateNextGenParallel(const Generation &current_gen, const MPI_Comm &cart_comm);
+void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, const MPI_Comm &cart_comm);
 
 /**
     Iterates over the grid of a generation and increments the counters correspondingly
