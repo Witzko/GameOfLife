@@ -132,23 +132,23 @@ As stated in [1], chapter 3.2.4, an MPI program can be compiled with a normal C/
 
 ### 2.2 Classes and functions
 
-#### Cell (Class)
+#### 2.2.1 Cell (Class)
 
 **members:** char state;
 **member-functions:** setStateAlive(), setStateToDead(), getState(), isAlive(), Constructor
 
-#### Matrix (Class)
+#### 2.2.3 Matrix (Class)
 
 **members:** std::vector<std::vector<Cell>>
 **member-functions:** getMatrix(), Parameter Constructor with probability of alive cells etc., default constructor, getSize()
 
-#### Generation (Class)
+#### 2.2.4 Generation (Class)
 
 **members:** Matrix
 **member-functions:** printGeneration(), getGeneration(), countAliveNeighbours(), Constructors, countAliveNeighbours()
 
 
-#### Functions
+#### 2.2.5 Functions
 
 There are also a couple of free functions. The two most important ones are shortly mentioned in the following.
 
@@ -159,7 +159,7 @@ There are also a couple of free functions. The two most important ones are short
 **algorithm:** Two for-loops which iterate over the matrix and count for each cell the alive neighbours of the 8 neighbours. Based on the conditions of the game of life
             the cell lives or dies. The only slightly tricky part is to "fold" the matrix, so making sure the upper_row, lower_row, left_col, right_col values are correct.
 
-**calculateNextGenParallel**
+**calculateNextGenParallel()**
 
 **input:** Generation object (reference), num_of_processes
 **output:** Generation object
