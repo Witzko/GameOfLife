@@ -17,10 +17,10 @@ debug: CXX_FLAGS += -DDEBUG -g
 debug: sequential parallel
 
 ./build/main_sequential.o: ./src/sequential/main.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
-	@$(CXX) $(CXX_FLAGS) -c ./src/sequential/main.cpp -o ./build/main.o
+	@$(CXX) $(CXX_FLAGS) -c ./src/sequential/main.cpp -o ./build/main_sequential.o
 
 ./build/main_parallel.o: ./src/parallel/main.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
-	@$(CXX) $(CXX_FLAGS) -c ./src/sequential/main.cpp -o ./build/main.o
+	@$(CXX) $(CXX_FLAGS) -c ./src/sequential/main.cpp -o ./build/main_parallel.o
 
 ./build/functions.o: ./src/functions.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
 	@$(CXX) $(CXX_FLAGS) -c ./src/functions.cpp -o ./build/functions.o
