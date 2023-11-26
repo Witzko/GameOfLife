@@ -81,6 +81,7 @@ int main(int argc, char **argv)
             Generation next_gen_sequential = calculateNextGenSequentially(current_gen);
             if (!areGenerationsEqual(next_gen, next_gen_sequential))
             {
+                std::cout << "The sequential and parallel solution are not the same! Check the /debug folder."
                 next_gen.printGeneration("parallel_gen");
                 next_gen_sequential.printGeneration("sequential_gen");
             }

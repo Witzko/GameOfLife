@@ -54,7 +54,6 @@ void calculateNextGenParallel(const Generation &current_gen, Generation &next_ge
     int coords[ndim];
     int periods[ndim] = {1, 1};
 
-    // Get Cartesian coordinates of the current process
     MPI_Cart_get(cart_comm, ndim, dims, periods, coords);
 
     int num_local_rows = N / dims[0];
@@ -66,15 +65,21 @@ void calculateNextGenParallel(const Generation &current_gen, Generation &next_ge
     int end_row = (coords[0] + 1) * num_local_rows - 1;
     int end_col = (coords[1] + 1) * num_local_cols - 1;
 
+#ifdef DEBUG
+    MPI_Barrier(cart_comm);
+    std::cout << "Rank " << rank << " has coordinates (" << coords[0] << ", " << coords[1] << ")" << std::endl;
+    std::cout << "Start row: " << start_row << ", End row: " << end_row << ", Start col: " << start_col << ", End col: " << end_col << std::endl;
+    MPI_Barrier(cart_comm);
+#endif
 
-    std::cout << "Rank " << rank << " has coordinates (" << coords[0] << ", " << coords[1] << ")" << 
-    "and start_row, end_row, start_col, end_col " << start_row << end_row << start_col << end_col << std::endl;
-    
+    /*  !!! Delete this dummy value. Only there cause next_gen can not stay unused when compiling !!!*/
     char dummy = next_gen.getGenerationCells()[0][0].getState();
     std::cout << dummy << std::endl;
-    /*      
+
+
+    /*
             ### Exercise 3 + 4  ###
-            
+
             My boyz take over and can start implementing the logic here
 
             Note that you can do similar stuff like in the sequential version:
@@ -82,8 +87,6 @@ void calculateNextGenParallel(const Generation &current_gen, Generation &next_ge
             just set the state inside the for loops with next_gen.getGenerationCells()[i][j].setStateToAlive();
 
     */
-
-    
 }
 
 void countAliveAndDeadCells(const Generation &gen, int &alive_count, int &dead_count)
