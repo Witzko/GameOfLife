@@ -259,7 +259,18 @@ This leads to our implementation:
     MPI_Cart_coords(cart_comm, rank, ndim, coords);
 ------------------------------------------------------------------------------------------
 
-*For setting up Cartesian communicators over an existing communicator of size p (that is, with p MPI processes), the MPI_Dims_create function can be helpful for factoring p into d factors that are close to each other.* [1]. We use that to create the dimensions based on the size of MPI_COMM_WORLD (which ultimately just is the number of processes). MPI_Cart_coords is useful to get the cartesian coordinates for each process in the grid
+*For setting up Cartesian communicators over an existing communicator of size p (that is, with p MPI processes), the MPI_Dims_create function can be helpful for factoring p into d factors that are close to each other.* [1]. We use that to create the dimensions based on the size of MPI_COMM_WORLD (which ultimately just is the number of processes). MPI_Cart_coords is useful to get the cartesian coordinates for each process in the grid.
+
+We defined a debug section with *#ifdef DEBUG* where we can check the cartesian coordinates of each process and its rank. E.g. for 4 processes we get in the console:
+"
+Rank 0 has coordinates (0, 0)
+Rank 1 has coordinates (0, 1)
+Rank 2 has coordinates (1, 0)
+Rank 3 has coordinates (1, 1)
+"
+which is exactly the outcome what we want.
+
+The next task is to split up the 
 
 ### 2.5 Exercise 3
 
