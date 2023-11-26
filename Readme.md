@@ -1,12 +1,13 @@
 # HPC Assignment 1: Game of Life Stencil
 **2023 TU WIEN, Group Project by Group 16**
 
-This is the HPC Project from WS23/24 of Group 16.
+This is the HPC Project of Group 16 for the TU Wien couse High Performance Computing from WS23/24.
 
 **Members of Group 16**:
-    - Peter Diem,
-    - Adam
-    - Markus Witzko, 11709272
+
+    -Peter Diem,
+    -Adam
+    -Markus Witzko, 11709272
 
 In the following, we discuss general ideas on how to implement the project, discuss the exercises in detail, talk about the benchmark and finally, interpret the results.
 
