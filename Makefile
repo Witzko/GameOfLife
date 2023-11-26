@@ -1,5 +1,5 @@
 CXX := mpicxx
-CXX_FLAGS := -Werror -Wall -Wextra -g # -O3 -march=native -std=c++20
+CXX_FLAGS := -Werror -Wall -Wextra # -O3 -march=native -std=c++20
 
 .DEFAULT_GOAL := sequential
 
@@ -13,7 +13,8 @@ sequential: $(OBJECTS_SEQUENTIAL)
 parallel: $(OBJECTS_PARALLEL)
 	@$(CXX) $(CXX_FLAGS) $(OBJECTS_PARALLEL) -o ./build/parallel
 
-
+debug: CXX_FLAGS += -DDEBUG -g
+debug: sequential parallel
 
 ./build/main_sequential.o: ./src/sequential/main.cpp ./include/Matrix.hpp ./include/Cell.hpp ./include/Generation.hpp
 	@$(CXX) $(CXX_FLAGS) -c ./src/sequential/main.cpp -o ./build/main.o

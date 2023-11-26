@@ -23,7 +23,9 @@ int main(int argc, char **argv)
         Initialization:
     */
     Generation current_gen{Matrix(N, prob_of_life)};
-    current_gen.printGeneration("first_gen");
+    #ifdef DEBUG
+        current_gen.printGeneration("first_gen");
+    #endif
 
     Generation next_gen{};
 
@@ -61,7 +63,10 @@ int main(int argc, char **argv)
 
         Post Processing Start
     */
-    next_gen.printGeneration("last_gen"); // DEBUG
+
+    #ifdef DEBUG
+        next_gen.printGeneration("last_gen");
+    #endif
 
     int alive_cells{0};
     int dead_cells{0};
