@@ -49,18 +49,18 @@ Generation::Generation(int row_size, int col_size, float prob_of_life)
 
 int Generation::getRowSize() const
 {
-    return this->generation[0].size();
+    return this->generation.size();
 }
 
 int Generation::getColSize() const
 {
-    return this->generation.size();
+    return this->generation[0].size();
 }
 
 int Generation::countAliveNeighbours(const int &left_col_idx, const int &right_col_idx, const int &lower_row_idx, const int &upper_row_idx, const int &col_idx, const int &row_idx) const
 {
 
-    int alive_neighbours_count{0};
+    int alive_neighbours_count = 0;
     const std::vector<std::vector<Cell>> &current_gen_cells = generation;
 
     // clockwise from bottom left

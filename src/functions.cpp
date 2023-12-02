@@ -17,7 +17,7 @@ Generation calculateNextGenSequentially(const Generation &current_gen)
 
         for (int j = 0; j < col_size; ++j)
         {
-            const int left_col_idx = (j - 1 + col_size) % col_size;
+            int left_col_idx = (j - 1 + col_size) % col_size;
             int right_col_idx = (j + 1) % col_size;
             int alive_neighbours_count = current_gen.countAliveNeighbours(left_col_idx, right_col_idx, lower_row_idx, upper_row_idx, j, i);
             bool isAlive = current_gen.getGeneration()[i][j].isAlive();
@@ -84,9 +84,8 @@ void calculateNextGenParallel(const Generation &current_gen, Generation &next_ge
     MPI_Barrier(cart_comm);
 #endif
 
-    /*  !!! Delete this dummy value. Only there cause next_gen can not stay unused when compiling !!!*/
-    char dummy = next_gen.getGeneration()[0][0].getState();
-    std::cout << dummy << std::endl;
+    /*  !!! Delete this dummy std::cout. Only there cause next_gen can not stay unused when compiling !!!*/
+    std::cout << "dummy output " << next_gen.getGeneration()[0][0].getState() << start_row << start_col << end_row << end_col << std::endl;
 
     /*
             ### Exercise 3 + 4  ###

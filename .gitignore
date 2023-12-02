@@ -12,3 +12,5 @@
 /build/main_sequential.o
 /build/main_parallel.o
 /build/parallel
+/build/sequential
+/debug/*.csv

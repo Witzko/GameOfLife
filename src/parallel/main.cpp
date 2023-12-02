@@ -2,6 +2,8 @@
 #include <vector>
 #include <mpi.h>
 #include <cassert>
+#include <string>
+#include <sstream>
 #include "../../include/Generation.hpp"
 #include "../../include/functions.hpp"
 
@@ -21,8 +23,14 @@ int main(int argc, char **argv)
     int col_size = std::atoi(argv[2]);
     float prob_of_life = std::atof(argv[3]);
     int number_of_repetitions = std::atoi(argv[4]);
-    bool weak_scaling_flag = std::atoi(argv[5]);
-
+    std::string weak_scaling_string = argv[5];
+    std::istringstream iss(weak_scaling_string);
+    bool weak_scaling_flag;
+    if (!(iss >> std::boolalpha >> weak_scaling_flag))
+    {
+        std::cerr << "Invalid boolean argument: " << weak_scaling_flag << std::endl;
+        return 1;
+    }
     /*
         MPI Section Start:
     */
@@ -63,7 +71,7 @@ int main(int argc, char **argv)
     */
     Generation current_gen;
 
-    if (weak_scaling_flag)
+    if (weak_scaling_flag == true)
     {
         current_gen = Generation{row_size * size, col_size * size, prob_of_life}; // if weak scaling, the matrix size of one process is given by num_rows, num_cols and the full matrix size is therefore
                                                                                   // row_size * size (= num of processes), col_size * size
@@ -101,7 +109,8 @@ int main(int argc, char **argv)
             Generation next_gen_sequential = calculateNextGenSequentially(current_gen);
             if (!areGenerationsEqual(next_gen, next_gen_sequential))
             {
-                std::cout << "The sequential and parallel solution are not the same! Check the /debug folder." next_gen.printGeneration("parallel_gen");
+                std::cout << "The sequential and parallel solution are not the same! Check the /debug folder." << std::endl;
+                next_gen.printGeneration("parallel_gen");
                 next_gen_sequential.printGeneration("sequential_gen");
             }
         }
