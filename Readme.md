@@ -14,7 +14,7 @@ In the following, we discuss general ideas on how to implement the project, disc
 ## 1. Task description
 
 We are implementing a two dimensional stencil computation on small integers, and for that purpose we choose *Game of Life*.
-In the *Game of Life* a so-called **cell** can be either dead or alive. The cells are then distributed in a N x N matrix, which is 
+In the *Game of Life* a so-called **cell** can be either dead or alive. The cells are then distributed in a N x M matrix, which is 
 illustrated in the following picture:
 
 ![](./pics/generic_matrix_scheme.PNG)
@@ -31,11 +31,11 @@ cells either live or die depending on the state of their neighbours. The followi
         - dead for next generation
 
 These are the core principles to consider. Another important aspect of the task is, that the matrix is folded, so if we access an entry at a 
-out-of-bounce position in an N x N matix:
+out-of-bounce position in an N x M matix:
 
     Matrix[N+1, 0] = Matrix[0,0]
-    Matrix[0, N+1] = Matrix[0,0]
-    Matrix[N+1, N+1] = Matrix[0,0]
+    Matrix[0, M+1] = Matrix[0,0]
+    Matrix[N+1, M+1] = Matrix[0,0]
     Matrix[N+1, 1] = Matrix[0, 1]
     (...... and so on)
 
@@ -138,18 +138,14 @@ As stated in [1], chapter 3.2.4, an MPI program can be compiled with a normal C/
 **members:** char state;
 **member-functions:** setStateAlive(), setStateToDead(), getState(), isAlive(), Constructor
 
-#### 2.2.3 Matrix (Class)
 
-**members:** std::vector<std::vector<Cell>>
-**member-functions:** getMatrix(), Parameter Constructor with probability of alive cells etc., default constructor, getSize()
+#### 2.2.5 Generation (Class)
 
-#### 2.2.4 Generation (Class)
-
-**members:** Matrix
-**member-functions:** printGeneration(), getGeneration(), countAliveNeighbours(), Constructors, countAliveNeighbours()
+**members:** std::vector<std::vector<Cell>> (Matrix)
+**member-functions:** printGeneration(), getGeneration(), countAliveNeighbours(), Constructors, countAliveNeighbours(), Parameter Constructor with probability of alive cells etc., default constructor, getRowSize(), getColSize()
 
 
-#### 2.2.5 Functions
+#### 2.2.6 Functions
 
 There are also a couple of free functions. The two most important ones are shortly mentioned in the following.
 
@@ -198,10 +194,10 @@ In regards to the runtime: The runtime depends primarily depends on the size of 
 The first exercise is mostly the implementation of the basics which were mentioned in Chapters 2.1 -2.3 above, but in the following we demonstrate how we initialized and used our Classes and functions with MPI for the sequential solution.
 
 **Step 1:** We pass 3 command line arguments to the program: <matrix_dim_N> <prob_of_life> <number_of_repetitions>
-**Step 2:** We initialize the first Generation based on the input parameters (dim N and probability of Life)
+**Step 2:** We initialize the first Generation based on the input parameters (row/col sizes and probability of Life)
 
 ------------------------------------------------------------------------------------------
-    Generation current_gen{Matrix(N, prob_of_life)};
+    Generation current_gen{row_size, col_size, prob_of_life};
 ------------------------------------------------------------------------------------------
 
 **Step 3:** We initialize MPI. For that we follow the script [1], page 134 - 136.
@@ -253,6 +249,7 @@ We call the executable with *mpirun 1 ./build/sequential <matrix_dim_N> <prob_of
 
 *The entry point for the second, parallel MPI implementation can be found in src/parallel/main.cpp*
 
+**Step 1: Setup cartesian Communicator**
 For exercise 2, one of the main tasks is to organize the given processes in a structured way. For that purpose a Cartesian communicator will be used. 
 The task is implemented with inspiration from [1], Chapter 3.2.8, which covers Cartesian communicators. The input arguments to our program stay the same as in Exercise 1,
 the number of processes is retrieved from the integer given at mpirun <num_of_processes> (...).
@@ -266,7 +263,7 @@ The generic structure of the cartesian communicator creation function is:
 *Input arguments are*:
 
 **comm**: The "base" communicator. MPI_COMM_WORLD in our case.
-**ndim**: Number of dimensions: 2 in our case for our NxN Matrix
+**ndim**: Number of dimensions: 2 in our case for our NxM Matrix
 **dims**: The size of the dimensions, in our case we choose to distribute the processes evenly in a 2dim grid (see 1.1 for the outline)
 **Periods**: From [1] we know that "The periods array is a Boolean (0/1) array indicating whether the grid is periodic in the ith dimension", therefore we should initialize it with.
 **Reorder**: We can experiment with the reorder flag, which is used so that MPI reorders the processes in a, POTENTIALLY, more efficient fashion.
@@ -299,51 +296,86 @@ This leads to our implementation:
 *For setting up Cartesian communicators over an existing communicator of size p (that is, with p MPI processes), the MPI_Dims_create function can be helpful for factoring p into d factors that are close to each other.* [1]. We use that to create the dimensions based on the size of MPI_COMM_WORLD (which ultimately just is the number of processes). MPI_Cart_coords is useful to get the cartesian coordinates for each process in the grid.
 
 We defined a debug section with *#ifdef DEBUG* where we can check the cartesian coordinates of each process and its rank. E.g. for 4 processes we get in the console:
-"
-Rank 0 has coordinates (0, 0)
-Rank 1 has coordinates (0, 1)
-Rank 2 has coordinates (1, 0)
-Rank 3 has coordinates (1, 1)
-"
+    "
+    Rank 0 has coordinates (0, 0)
+    Rank 1 has coordinates (0, 1)
+    Rank 2 has coordinates (1, 0)
+    Rank 3 has coordinates (1, 1)
+    "
 which is exactly the outcome what we want.
+
+**Create initial Generation depening on weak/strong scaling**
+
+If the process size is fixed (weak scaling) we take the arguments row_size, col_size and multiply these values with the number of processes (size variable here) to get the full matrix size.
+
+------------------------------------------------------------------------------------------
+    Generation current_gen;
+
+    if (weak_scaling_flag == true)
+    {
+        current_gen = Generation{row_size * size, col_size * size, prob_of_life}; // if weak scaling, the matrix size of one process is given by num_rows, num_cols and the full matrix size is therefore
+                                                                                  // row_size * size (= num of processes), col_size * size
+    }
+    else
+    {
+        current_gen = Generation{row_size, col_size, prob_of_life}; // if strong scaling, the matrix size of one process is dynamic. It gets evaluated in the function calculateNextGenParallel
+    }
+------------------------------------------------------------------------------------------
+
+**Assign workload to processes**
 
 The next task is to split up the Generation in specific parts for the processes. We use our function calculateNextGenParallel() here:
 
 ------------------------------------------------------------------------------------------
-    void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm)
+void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm, bool weak_scaling_flag)
+{
+
+    int row_size = current_gen.getRowSize();
+    int col_size = current_gen.getColSize();
+
+    int dims[2];
+    int rank, size;
+    MPI_Comm_rank(cart_comm, &rank);
+    MPI_Comm_size(cart_comm, &size);
+
+    const int ndim = 2;
+    int coords[ndim];
+    int periods[ndim] = {1, 1};
+
+    MPI_Cart_get(cart_comm, ndim, dims, periods, coords);
+
+    int num_local_rows, num_local_cols = 0;
+
+    if (weak_scaling_flag)
     {
-
-        int N = current_gen.getGeneration().getSize();
-
-        int dims[2];
-        int rank, size;
-        MPI_Comm_rank(cart_comm, &rank);
-        MPI_Comm_size(cart_comm, &size);
-
-        const int ndim = 2;
-        int coords[ndim];
-        int periods[ndim] = {1, 1};
-
-        MPI_Cart_get(cart_comm, ndim, dims, periods, coords);
-
-        int num_local_rows = N / dims[0];
-        int num_local_cols = N / dims[1];
-
-        int start_row = coords[0] * num_local_rows;
-        int start_col = coords[1] * num_local_cols;
-
-        int end_row = (coords[0] + 1) * num_local_rows - 1;
-        int end_col = (coords[1] + 1) * num_local_cols - 1;
-
-        ....
+        num_local_rows = row_size / size;
+        num_local_cols = col_size / size;
     }
+    else
+    {
+        num_local_rows = row_size / dims[0];
+        num_local_cols = col_size / dims[1];
+    }
+
+    int start_row = coords[0] * num_local_rows;
+    int start_col = coords[1] * num_local_cols;
+
+    int end_row = (coords[0] + 1) * num_local_rows - 1;
+    int end_col = (coords[1] + 1) * num_local_cols - 1;
+
+    ....
+}
 ------------------------------------------------------------------------------------------
 
 As one can see, we pass a reference from our newly created cart_comm to the function, as well as a reference to the current_generation and next_generation.
 There are never more than two generations in memory, since they go out of scope, or are explicitly dereferenced (see main function). Within our function, we use the functions MPI_Comm_rank and MPI_Comm_size to retrieve the rank and size of the function-calling process. This then is used to get the coords of the process. With the
 coords we can calculate the local start_row, end_row, start_col and end_col of the submatrix dynamically. 
 
+The row are calculated such that the values depend on IF the weak_scaling_flag is set or not. If it is set, the size for each process is fixed (see also the creation of the generation above.)
+
 This basically is it. We generated a Cartesian Communicator and used the grid to determine the sub-Matrix for each process.
+
+**Compare solution against sequential solution**
 
 Lastly we want to demonstrate our way of checking the sequential vs the parallel solution:
 
