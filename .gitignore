@@ -7,7 +7,6 @@
 /build/functions.o
 /build/Generation.o
 /build/main.o
-/build/Matrix.o
 /build/sequential.exe
 /build/main_sequential.o
 /build/main_parallel.o
