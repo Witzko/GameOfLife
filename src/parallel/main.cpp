@@ -2,7 +2,6 @@
 #include <vector>
 #include <mpi.h>
 #include <cassert>
-#include "../../include/Matrix.hpp"
 #include "../../include/Generation.hpp"
 #include "../../include/functions.hpp"
 
@@ -12,23 +11,17 @@ int main(int argc, char **argv)
     /*
         Initialization
     */
-    if (argc != 4)
+    if (argc != 6)
     {
-        std::cerr << "Usage: " << argv[0] << " <matrix_dim_N> <prob_of_life> <num_of_repetitions>\n";
+        std::cerr << "Usage: " << argv[0] << " <matrix_size_row> <matrix_size_col> <prob_of_life> <number_of_repetitions> <weak_scaling_flag>\n";
         return 1;
     }
 
-    int N = std::atoi(argv[1]);
-    float prob_of_life = std::atof(argv[2]);
-    int num_of_repetitions = std::atoi(argv[3]);
-
-    Generation current_gen{Matrix(N, prob_of_life)};
-
-#ifdef DEBUG
-    current_gen.printGeneration("first_gen");
-#endif
-
-    Generation next_gen = current_gen; // tmp same values as first gen for first calculation
+    int row_size = std::atoi(argv[1]);
+    int col_size = std::atoi(argv[2]);
+    float prob_of_life = std::atof(argv[3]);
+    int number_of_repetitions = std::atoi(argv[4]);
+    bool weak_scaling_flag = std::atoi(argv[5]);
 
     /*
         MPI Section Start:
@@ -65,17 +58,38 @@ int main(int argc, char **argv)
     }
 #endif
 
+    /*
+        Initialization of Generation object: Depends on weak/strong scaling flag
+    */
+    Generation current_gen;
+
+    if (weak_scaling_flag)
+    {
+        current_gen = Generation{row_size * size, col_size * size, prob_of_life}; // if weak scaling, the matrix size of one process is given by num_rows, num_cols and the full matrix size is therefore
+                                                                                  // row_size * size (= num of processes), col_size * size
+    }
+    else
+    {
+        current_gen = Generation{row_size, col_size, prob_of_life}; // if strong scaling, the matrix size of one process is dynamic. It gets evaluated in the function calculateNextGenParallel
+    }
+
+#ifdef DEBUG
+    current_gen.printGeneration("first_gen");
+#endif
+
+    Generation next_gen = current_gen; // tmp same values as first gen for first calculation
+
     double start_time, end_time;
     std::vector<double> times;
 
     MPI_Barrier(cart_comm);
-    for (int i = 0; i < num_of_repetitions; i++)
+    for (int i = 0; i < number_of_repetitions; i++)
     {
         start_time = MPI_Wtime();
 
-        calculateNextGenParallel(current_gen, next_gen, cart_comm);
+        calculateNextGenParallel(current_gen, next_gen, cart_comm, weak_scaling_flag);
 
-        MPI_Barrier(cart_comm); // Träff said this is kind of okay in the lecture, but he would prefer a solution without two MPI Barriers but just one before the for loop. 
+        MPI_Barrier(cart_comm); // Träff said this is kind of okay in the lecture, but he would prefer a solution without two MPI Barriers but just one before the for loop.
                                 // Stuff to think about when implementing Exercise 3 + 4 ...
         end_time = MPI_Wtime();
         times.push_back(end_time - start_time);

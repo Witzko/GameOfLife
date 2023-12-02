@@ -5,21 +5,22 @@
 
 Generation calculateNextGenSequentially(const Generation &current_gen)
 {
-    int N = current_gen.getGeneration().getSize();
+    int row_size = current_gen.getRowSize();
+    int col_size = current_gen.getColSize();
     std::vector<std::vector<Cell>> next_gen_cells;
 
-    for (int i = 0; i < N; ++i)
+    for (int i = 0; i < row_size; ++i)
     {
-        int upper_row_idx = (i - 1 + N) % N;
-        int lower_row_idx = (i + 1) % N;
+        int upper_row_idx = (i - 1 + row_size) % row_size;
+        int lower_row_idx = (i + 1) % row_size;
         std::vector<Cell> next_gen_rows;
 
-        for (int j = 0; j < N; ++j)
+        for (int j = 0; j < col_size; ++j)
         {
-            const int left_col_idx = (j - 1 + N) % N;
-            int right_col_idx = (j + 1) % N;
+            const int left_col_idx = (j - 1 + col_size) % col_size;
+            int right_col_idx = (j + 1) % col_size;
             int alive_neighbours_count = current_gen.countAliveNeighbours(left_col_idx, right_col_idx, lower_row_idx, upper_row_idx, j, i);
-            bool isAlive = current_gen.getGenerationCells()[i][j].isAlive();
+            bool isAlive = current_gen.getGeneration()[i][j].isAlive();
 
             if (!isAlive && alive_neighbours_count == 3)
             {
@@ -37,13 +38,14 @@ Generation calculateNextGenSequentially(const Generation &current_gen)
         next_gen_cells.push_back(std::move(next_gen_rows));
     }
 
-    return Generation(Matrix{std::move(next_gen_cells)});
+    return Generation(std::move(next_gen_cells));
 }
 
-void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm)
+void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm, bool weak_scaling_flag)
 {
 
-    int N = current_gen.getGeneration().getSize();
+    int row_size = current_gen.getRowSize();
+    int col_size = current_gen.getColSize();
 
     int dims[2];
     int rank, size;
@@ -56,8 +58,18 @@ void calculateNextGenParallel(const Generation &current_gen, Generation &next_ge
 
     MPI_Cart_get(cart_comm, ndim, dims, periods, coords);
 
-    int num_local_rows = N / dims[0];
-    int num_local_cols = N / dims[1];
+    int num_local_rows, num_local_cols = 0;
+
+    if (weak_scaling_flag)
+    {
+        num_local_rows = row_size / size;
+        num_local_cols = col_size / size;
+    }
+    else
+    {
+        num_local_rows = row_size / dims[0];
+        num_local_cols = col_size / dims[1];
+    }
 
     int start_row = coords[0] * num_local_rows;
     int start_col = coords[1] * num_local_cols;
@@ -73,9 +85,8 @@ void calculateNextGenParallel(const Generation &current_gen, Generation &next_ge
 #endif
 
     /*  !!! Delete this dummy value. Only there cause next_gen can not stay unused when compiling !!!*/
-    char dummy = next_gen.getGenerationCells()[0][0].getState();
+    char dummy = next_gen.getGeneration()[0][0].getState();
     std::cout << dummy << std::endl;
-
 
     /*
             ### Exercise 3 + 4  ###
@@ -84,14 +95,14 @@ void calculateNextGenParallel(const Generation &current_gen, Generation &next_ge
 
             Note that you can do similar stuff like in the sequential version:
 
-            just set the state inside the for loops with next_gen.getGenerationCells()[i][j].setStateToAlive();
+            just set the state inside the for loops with next_gen.getGeneration()[i][j].setStateToAlive();
 
     */
 }
 
 void countAliveAndDeadCells(const Generation &gen, int &alive_count, int &dead_count)
 {
-    for (const auto &row : gen.getGenerationCells())
+    for (const auto &row : gen.getGeneration())
     {
         for (const auto &cell : row)
         {
@@ -110,8 +121,8 @@ void countAliveAndDeadCells(const Generation &gen, int &alive_count, int &dead_c
 bool areGenerationsEqual(const Generation &gen_one, const Generation &gen_two)
 {
 
-    const std::vector<std::vector<Cell>> &gen_one_cells = gen_one.getGenerationCells();
-    const std::vector<std::vector<Cell>> &gen_two_cells = gen_two.getGenerationCells();
+    const std::vector<std::vector<Cell>> &gen_one_cells = gen_one.getGeneration();
+    const std::vector<std::vector<Cell>> &gen_two_cells = gen_two.getGeneration();
 
     if (gen_one_cells.size() != gen_two_cells.size())
     {
@@ -134,19 +145,19 @@ bool areGenerationsEqual(const Generation &gen_one, const Generation &gen_two)
     return true;
 }
 
-Matrix getSubMatrix(const Matrix &matrix, int start_row, int start_col, int num_rows, int num_cols)
+std::vector<std::vector<Cell>> getSubMatrix(const std::vector<std::vector<Cell>> &matrix, int start_row, int start_col, int num_rows, int num_cols)
 {
 
     std::vector<std::vector<Cell>> sub_matrix_cells;
 
     for (int i = start_row; i < start_row + num_rows; i++)
     {
-        std::vector<Cell>::const_iterator first_row_entry = matrix.getMatrix()[i].begin() + start_col;
-        std::vector<Cell>::const_iterator last_row_entry = matrix.getMatrix()[i].begin() + (start_col + num_cols);
+        std::vector<Cell>::const_iterator first_row_entry = matrix[i].begin() + start_col;
+        std::vector<Cell>::const_iterator last_row_entry = matrix[i].begin() + (start_col + num_cols);
         sub_matrix_cells.push_back(std::vector<Cell>(first_row_entry, last_row_entry));
     }
 
-    return Matrix{sub_matrix_cells};
+    return sub_matrix_cells;
 }
 
 double averageVectorElements(const std::vector<double> &_vector)

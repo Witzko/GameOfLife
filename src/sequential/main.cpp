@@ -2,30 +2,30 @@
 #include <vector>
 #include <mpi.h>
 #include <cassert>
-#include "../../include/Matrix.hpp"
 #include "../../include/Generation.hpp"
 #include "../../include/functions.hpp"
 
 int main(int argc, char **argv)
 {
 
-    if (argc != 4)
+    if (argc != 5)
     {
-        std::cerr << "Usage: " << argv[0] << " <matrix_dim_N> <prob_of_life> <number_of_repetitions>\n";
+        std::cerr << "Usage: " << argv[0] << " <matrix_size_row> <matrix_size_col> <prob_of_life> <number_of_repetitions>\n";
         return 1;
     }
 
-    int N = std::atoi(argv[1]);
-    float prob_of_life = std::atof(argv[2]);
-    int number_of_repetitions = std::atoi(argv[3]);
+    int row_size = std::atoi(argv[1]);
+    int col_size = std::atoi(argv[2]);
+    float prob_of_life = std::atof(argv[3]);
+    int number_of_repetitions = std::atoi(argv[4]);
 
     /*
         Initialization:
     */
-    Generation current_gen{Matrix(N, prob_of_life)};
-    #ifdef DEBUG
-        current_gen.printGeneration("first_gen");
-    #endif
+    Generation current_gen{row_size, col_size, prob_of_life};
+#ifdef DEBUG
+    current_gen.printGeneration("first_gen");
+#endif
 
     Generation next_gen{};
 
@@ -36,8 +36,8 @@ int main(int argc, char **argv)
 
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD,&size);
-    assert(0<=rank&&rank<size);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    assert(0 <= rank && rank < size);
 
     double start_time, end_time;
     std::vector<double> times;
@@ -61,9 +61,9 @@ int main(int argc, char **argv)
         Post Processing Start
     */
 
-    #ifdef DEBUG
-        next_gen.printGeneration("last_gen");
-    #endif
+#ifdef DEBUG
+    next_gen.printGeneration("last_gen");
+#endif
 
     int alive_cells{0};
     int dead_cells{0};
@@ -72,7 +72,6 @@ int main(int argc, char **argv)
                  "Alive Cells: "
               << alive_cells << " Dead Cells: " << dead_cells << std::endl;
 
-    
     std::cout << "Average calculation time per generation: " << averageVectorElements(times) << std::endl;
     return 0;
 }

@@ -1,35 +1,67 @@
 #include "../include/Generation.hpp"
 #include <fstream>
 #include <iostream>
+#include <random>
+#include <memory>
 
-Generation::Generation(Matrix _generation) : generation(_generation)
+Generation::Generation(std::vector<std::vector<Cell>> _generation) : generation(_generation)
 {
 }
 
-const Matrix &Generation::getGeneration() const
-{
-    return generation;
-}
-
-Matrix &Generation::getGeneration()
+const std::vector<std::vector<Cell>> &Generation::getGeneration() const
 {
     return generation;
 }
 
-const std::vector<std::vector<Cell>> &Generation::getGenerationCells() const
+std::vector<std::vector<Cell>> &Generation::getGeneration()
 {
-    return generation.getMatrix();
+    return generation;
 }
 
-std::vector<std::vector<Cell>> &Generation::getGenerationCells() {
-    return generation.getMatrix();
+Generation::Generation(int row_size, int col_size, float prob_of_life)
+{
+
+    std::vector<std::vector<Cell>> _generation;
+    std::default_random_engine random_engine;
+    std::uniform_real_distribution<> uniform_zero_to_one(0.0, 1.0);
+
+    for (int i = 0; i < row_size; i++)
+    {
+        std::vector<Cell> row;
+
+        for (int j = 0; j < col_size; j++)
+        {
+            if (uniform_zero_to_one(random_engine) > prob_of_life)
+            {
+                row.push_back(Cell{'d'});
+            }
+            else
+            {
+                row.push_back(Cell{'a'});
+            }
+        }
+
+        _generation.push_back(std::move(row));
+    }
+
+    this->generation = _generation;
+}
+
+int Generation::getRowSize() const
+{
+    return this->generation[0].size();
+}
+
+int Generation::getColSize() const
+{
+    return this->generation.size();
 }
 
 int Generation::countAliveNeighbours(const int &left_col_idx, const int &right_col_idx, const int &lower_row_idx, const int &upper_row_idx, const int &col_idx, const int &row_idx) const
 {
 
     int alive_neighbours_count{0};
-    const std::vector<std::vector<Cell>> &current_gen_cells = generation.getMatrix();
+    const std::vector<std::vector<Cell>> &current_gen_cells = generation;
 
     // clockwise from bottom left
     current_gen_cells[lower_row_idx][left_col_idx].isAlive() && alive_neighbours_count++;
@@ -54,7 +86,7 @@ void Generation::printGeneration(const std::string &filename) const
         return;
     }
 
-    const auto &matrix_current_gen = generation.getMatrix();
+    const auto &matrix_current_gen = generation;
     file << "Generation  \n";
 
     for (const auto &row : matrix_current_gen)

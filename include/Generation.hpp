@@ -1,12 +1,13 @@
 #pragma once
-#include "./Matrix.hpp"
 #include <memory>
 #include <string>
+#include <vector>
+#include "Cell.hpp"
 
 class Generation
 {
 
-  Matrix generation;
+  std::vector<std::vector<Cell>> generation;
 
 public:
   /**
@@ -22,35 +23,43 @@ public:
     @param _generation Matrix object
     @return Generation object
   */
-  explicit Generation(Matrix _generation);
+  explicit Generation(std::vector<std::vector<Cell>> _generation);
 
   /**
-     Gets the Matrix  of the Generation object
+    Constructs a Generation of size NxN and the grid of cells with a certain probability of being dead or alive for each cell
 
-    @return Matrix
-  */
-  const Matrix &getGeneration() const;
+    @param row_size row size of generation matrix
+    @param col_size col size of generation matrix
+    @param prob_of_life Probability of individual cells being alive
+    @return Generation Object
+*/
+  Generation(int row_size, int col_size, float prob_of_life);
 
   /**
-     Non-const getter of the Matrix of the Generation object
-
-    @return Matrix
+      Returns the Row Size of the Generation matrix
+      @return Size of Row in Generation
   */
-  Matrix &getGeneration();
+  int getRowSize() const;
+
+  /**
+      Returns the Col Size of the Generation matrix
+      @return Size of Col in Generation
+  */
+  int getColSize() const;
 
   /**
     Getter of the underlying Matrix member of the Generation object
 
     @return Matrix member
   */
-  const std::vector<std::vector<Cell>> &getGenerationCells() const;
+  const std::vector<std::vector<Cell>> &getGeneration() const;
 
   /**
     non-const Getter of the underlying Matrix member of the Generation object
 
     @return Matrix member
   */
-  std::vector<std::vector<Cell>> &getGenerationCells();
+  std::vector<std::vector<Cell>> &getGeneration();
 
   /**
     Counts Alive Neighbours of cell. Each cell has 8 neighbours in the Grid

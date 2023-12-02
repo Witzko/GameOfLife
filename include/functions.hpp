@@ -17,7 +17,7 @@ Generation calculateNextGenSequentially(const Generation &current_gen);
     @param num_of_processes number of processes
     @return Generation Object
 */
-void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm);
+void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm, bool weak_scaling_flag);
 
 /**
     Iterates over the grid of a generation and increments the counters correspondingly
@@ -48,7 +48,7 @@ bool areGenerationsEqual(const Generation &gen_one, const Generation &gen_two);
     @param num_cols Number of cols for resulting submatrix
     @return Matrix Object
 */
-Matrix getSubMatrix(const Matrix &matrix, int start_row, int start_col, int num_rows, int num_cols);
+std::vector<std::vector<Cell>> getSubMatrix(const std::vector<std::vector<Cell>> &matrix, int start_row, int start_col, int num_rows, int num_cols);
 
 /**
     Averages the values in a std::vector
