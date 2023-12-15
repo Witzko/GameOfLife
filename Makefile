@@ -13,7 +13,7 @@ sequential: $(OBJECTS_SEQUENTIAL)
 parallel: $(OBJECTS_PARALLEL)
 	@$(CXX) $(CXX_FLAGS) $(OBJECTS_PARALLEL) -o ./build/parallel
 
-debug: CXX_FLAGS += -DDEBUG -g
+debug: CXX_FLAGS += -DDEBUG -g -O0
 debug: sequential parallel
 
 ./build/main_sequential.o: ./src/sequential/main.cpp ./include/Cell.hpp ./include/Generation.hpp ./include/functions.hpp
@@ -30,3 +30,7 @@ debug: sequential parallel
 
 ./build/Cell.o: ./src/Cell.cpp ./include/Cell.hpp
 	@$(CXX) $(CXX_FLAGS) -c ./src/Cell.cpp -o ./build/Cell.o
+
+.PHONY: clean
+clean:
+	rm -rf build/*

@@ -7,45 +7,58 @@ Generation calculateNextGenSequentially(const Generation &current_gen)
 {
     int row_size = current_gen.getRowSize();
     int col_size = current_gen.getColSize();
-    std::vector<std::vector<Cell>> next_gen_cells;
+    std::vector<Cell> next_gen_cells(row_size * col_size, Cell{'d'});
+    Generation next_gen(next_gen_cells, row_size, col_size);
 
     for (int i = 0; i < row_size; ++i)
     {
         int upper_row_idx = (i - 1 + row_size) % row_size;
         int lower_row_idx = (i + 1) % row_size;
-        std::vector<Cell> next_gen_rows;
 
         for (int j = 0; j < col_size; ++j)
         {
             int left_col_idx = (j - 1 + col_size) % col_size;
             int right_col_idx = (j + 1) % col_size;
             int alive_neighbours_count = current_gen.countAliveNeighbours(left_col_idx, right_col_idx, lower_row_idx, upper_row_idx, j, i);
-            bool isAlive = current_gen.getGeneration()[i][j].isAlive();
+            bool isAlive = current_gen.getCell(i,j).isAlive();
 
             if (!isAlive && alive_neighbours_count == 3)
             {
-                next_gen_rows.push_back(Cell{'a'});
+                next_gen.getCell(i,j).setState('a');
             }
             else if (isAlive && (alive_neighbours_count == 3 || alive_neighbours_count == 2))
             {
-                next_gen_rows.push_back(Cell('a'));
+                next_gen.getCell(i,j).setState('a');
             }
             else
             {
-                next_gen_rows.push_back(Cell{'d'});
+                next_gen.getCell(i,j).setState('d');
             }
         };
-        next_gen_cells.push_back(std::move(next_gen_rows));
     }
 
-    return Generation(std::move(next_gen_cells));
+    return next_gen;
 }
 
-void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm, bool weak_scaling_flag)
+void printGrid(std::vector<Cell> &vector, int rows, int columns)
 {
+    int i, j;
+    for (i = 0; i < rows; i++){
+        for (j = 0; j < columns; j++){
+            printf("%c ", vector[i*columns+j].getState());
+        }
+        printf("\n");
+    }
+    fflush(stdout);
+}
 
+Generation calculateNextGenParallel(const Generation &current_gen, MPI_Comm &cart_comm,
+                                    MPI_Datatype &MPI_CELL, MPI_Datatype &MPI_COL_PADDING_WGHOST, int ghost_layer_size)
+{
     int row_size = current_gen.getRowSize();
     int col_size = current_gen.getColSize();
+    int row_size_wghost = row_size + 2 * ghost_layer_size;
+    int col_size_wghost = col_size + 2 * ghost_layer_size;
 
     int dims[2];
     int rank, size;
@@ -58,54 +71,98 @@ void calculateNextGenParallel(const Generation &current_gen, Generation &next_ge
 
     MPI_Cart_get(cart_comm, ndim, dims, periods, coords);
 
-    int num_local_rows, num_local_cols = 0;
+    // Create new generation with ghost layer and copy the current generation to it
+    std::vector<Cell> current_gen_cells_wghost(row_size_wghost*col_size_wghost, Cell('d'));
+    Generation current_gen_wghost(current_gen_cells_wghost, row_size_wghost, col_size_wghost);
 
-    if (weak_scaling_flag)
-    {
-        num_local_rows = row_size / size;
-        num_local_cols = col_size / size;
-    }
-    else
-    {
-        num_local_rows = row_size / dims[0];
-        num_local_cols = col_size / dims[1];
+    // Copy the values in current_gen into current_gen_wghost (i.e. current_gen_wghost contains matrix with inner matrix current_gen)
+    for (int i = 0; i < row_size; i++) {
+        for (int j = 0; j < col_size; j++) {
+            current_gen_wghost.getCell(i+ghost_layer_size, j+ghost_layer_size).setState(current_gen.getCell(i,j).getState());
+        }
     }
 
-    int start_row = coords[0] * num_local_rows;
-    int start_col = coords[1] * num_local_cols;
+    // Find the ranks of the neighbours
+    int upper_left_rank, upper_rank, upper_right_rank, left_rank, right_rank, lower_left_rank, lower_rank, lower_right_rank;
 
-    int end_row = (coords[0] + 1) * num_local_rows - 1;
-    int end_col = (coords[1] + 1) * num_local_cols - 1;
+    MPI_Cart_shift(cart_comm, 0, 1, &upper_rank, &lower_rank);
+    MPI_Cart_shift(cart_comm, 1, 1, &left_rank, &right_rank);
 
-#ifdef DEBUG
-    MPI_Barrier(cart_comm);
-    std::cout << "Rank " << rank << " has coordinates (" << coords[0] << ", " << coords[1] << ")" << std::endl;
-    std::cout << "Start row: " << start_row << ", End row: " << end_row << ", Start col: " << start_col << ", End col: " << end_col << std::endl;
-    MPI_Barrier(cart_comm);
-#endif
+    // Find ranks of the corners
+    int upper_left_coords[2] = {coords[0] - 1, coords[1] - 1};
+    int upper_right_coords[2] = {coords[0] - 1, coords[1] + 1};
+    int lower_left_coords[2] = {coords[0] + 1, coords[1] - 1};
+    int lower_right_coords[2] = {coords[0] + 1, coords[1] + 1};
 
-    /*  !!! Delete this dummy std::cout. Only there cause next_gen can not stay unused when compiling !!!*/
-    std::cout << "dummy output " << next_gen.getGeneration()[0][0].getState() << start_row << start_col << end_row << end_col << std::endl;
+    MPI_Cart_rank(cart_comm, upper_left_coords, &upper_left_rank);
+    MPI_Cart_rank(cart_comm, upper_right_coords, &upper_right_rank);
+    MPI_Cart_rank(cart_comm, lower_left_coords, &lower_left_rank);
+    MPI_Cart_rank(cart_comm, lower_right_coords, &lower_right_rank);
 
-    /*
-            ### Exercise 3 + 4  ###
+    MPI_Request send_request[8], recv_request[8];
+    int tag[8] = {0, 1, 2, 3, 4, 5, 6, 7};
 
-            My boyz take over and can start implementing the logic here
+    // Send (only the "inner" matrix of current_gen_wghost)
+    MPI_Isend(&current_gen_wghost.getCell(1,1), col_size, MPI_CELL, upper_rank, tag[0], cart_comm, &send_request[0]); // Upper border
+    MPI_Isend(&current_gen_wghost.getCell(row_size_wghost-2,1), col_size, MPI_CELL, lower_rank, tag[1], cart_comm, &send_request[1]); // Lower border
+    MPI_Isend(&current_gen_wghost.getCell(1,1), 1, MPI_COL_PADDING_WGHOST, left_rank, tag[2], cart_comm, &send_request[2]); // Left border
+    MPI_Isend(&current_gen_wghost.getCell(1,col_size_wghost-2), 1, MPI_COL_PADDING_WGHOST, right_rank, tag[3], cart_comm, &send_request[3]); // Right border
 
-            Note that you can do similar stuff like in the sequential version:
+    MPI_Isend(&current_gen_wghost.getCell(1,1), 1, MPI_CELL, upper_left_rank, tag[4], cart_comm, &send_request[4]); // Upper-left corner
+    MPI_Isend(&current_gen_wghost.getCell(1,col_size_wghost-2), 1, MPI_CELL, upper_right_rank, tag[5], cart_comm, &send_request[5]); // Upper-right corner
+    MPI_Isend(&current_gen_wghost.getCell(row_size_wghost-2,1), 1, MPI_CELL, lower_left_rank, tag[6], cart_comm, &send_request[6]); // Lower-left corner
+    MPI_Isend(&current_gen_wghost.getCell(row_size_wghost-2,col_size_wghost-2), 1, MPI_CELL, lower_right_rank, tag[7], cart_comm, &send_request[7]); // Lower-right corner
 
-            just set the state inside the for loops with next_gen.getGeneration()[i][j].setStateToAlive();
+    // Receive (address of the ghost layer indexes)
+    MPI_Irecv(&current_gen_wghost.getCell(0,1), col_size, MPI_CELL, upper_rank, tag[1], cart_comm, &recv_request[0]); // Upper border
+    MPI_Irecv(&current_gen_wghost.getCell(row_size_wghost-1, 1), col_size, MPI_CELL, lower_rank, tag[0], cart_comm, &recv_request[1]); // Lower border
+    MPI_Irecv(&current_gen_wghost.getCell(1,0), 1, MPI_COL_PADDING_WGHOST, left_rank, tag[3], cart_comm, &recv_request[2]); // Left border
+    MPI_Irecv(&current_gen_wghost.getCell(1,col_size_wghost-1), 1, MPI_COL_PADDING_WGHOST, right_rank, tag[2], cart_comm, &recv_request[3]); // Right border
 
-    */
+    MPI_Irecv(&current_gen_wghost.getCell(0,0), 1, MPI_CELL, upper_left_rank, tag[7], cart_comm, &recv_request[4]); // Upper-left corner
+    MPI_Irecv(&current_gen_wghost.getCell(0,col_size_wghost-1), 1, MPI_CELL, upper_right_rank, tag[6], cart_comm, &recv_request[5]); // Upper-right corner
+    MPI_Irecv(&current_gen_wghost.getCell(row_size_wghost-1,0), 1, MPI_CELL, lower_left_rank, tag[5], cart_comm, &recv_request[6]); // Lower-left corner
+    MPI_Irecv(&current_gen_wghost.getCell(row_size_wghost-1, col_size_wghost-1), 1, MPI_CELL, lower_right_rank, tag[4], cart_comm, &recv_request[7]); // Lower-right corner
+
+    MPI_Waitall(8, recv_request, MPI_STATUS_IGNORE);
+
+    // Create the next_gen and its cells
+    std::vector<Cell> next_gen_cells(row_size * col_size, Cell{'d'});
+    Generation next_gen(next_gen_cells, row_size, col_size);
+
+    // Iterate over the inner grid of the ghost layer generation and count neighbours. Store the iterated
+    // cells into the next_gen
+    for (int i = 1; i < row_size_wghost - 1; ++i)
+    {
+        int upper_row_idx = i - 1;
+        int lower_row_idx = i + 1;
+
+        for (int j = 1; j < col_size_wghost - 1; ++j)
+        {
+            int left_col_idx = j - 1;
+            int right_col_idx = j + 1;
+            int alive_neighbours_count = current_gen_wghost.countAliveNeighbours(left_col_idx, right_col_idx, lower_row_idx, upper_row_idx, j, i);
+            bool isAlive = current_gen_wghost.getCell(i,j).isAlive();
+
+            if (!isAlive && alive_neighbours_count == 3)
+            {
+                next_gen.getCell(i-ghost_layer_size,j-ghost_layer_size).setStateToAlive();
+            }
+            else if (isAlive && (alive_neighbours_count == 3 || alive_neighbours_count == 2))
+            {
+                next_gen.getCell(i-ghost_layer_size,j-ghost_layer_size).setStateToAlive();
+            }
+        }
+    }
+
+    return next_gen;
 }
 
 void countAliveAndDeadCells(const Generation &gen, int &alive_count, int &dead_count)
 {
-    for (const auto &row : gen.getGeneration())
-    {
-        for (const auto &cell : row)
-        {
-            if (cell.isAlive())
+    for (int i = 0; i < gen.getRowSize(); i++) {
+        for (int j = 0; j < gen.getColSize(); j++) {
+            if (gen.getCell(i,j).isAlive())
             {
                 alive_count++;
             }
@@ -119,9 +176,8 @@ void countAliveAndDeadCells(const Generation &gen, int &alive_count, int &dead_c
 
 bool areGenerationsEqual(const Generation &gen_one, const Generation &gen_two)
 {
-
-    const std::vector<std::vector<Cell>> &gen_one_cells = gen_one.getGeneration();
-    const std::vector<std::vector<Cell>> &gen_two_cells = gen_two.getGeneration();
+    const std::vector<Cell> &gen_one_cells = gen_one.getGeneration();
+    const std::vector<Cell> &gen_two_cells = gen_two.getGeneration();
 
     if (gen_one_cells.size() != gen_two_cells.size())
     {
@@ -130,23 +186,20 @@ bool areGenerationsEqual(const Generation &gen_one, const Generation &gen_two)
 
     for (size_t i = 0; i < gen_one_cells.size(); i++)
     {
-        if (gen_one_cells[i].size() != gen_two_cells[i].size())
-        {
-            return false;
-        }
-
-        if (gen_one_cells[i] != gen_two_cells[i]) // std::vector supports "==" operator, as well as our Cell class
-        {
-            return false;
-        }
+        if (gen_one_cells[i] == gen_two_cells[i]) continue;// std::vector supports "==" operator, as well as our Cell class
+        return false;
     }
 
     return true;
 }
 
+
+/**
+    I'm to lazy to fix it because it's not really used atm. Plez fix if needed.
+    // Adam
+*/
 std::vector<std::vector<Cell>> getSubMatrix(const std::vector<std::vector<Cell>> &matrix, int start_row, int start_col, int num_rows, int num_cols)
 {
-
     std::vector<std::vector<Cell>> sub_matrix_cells;
 
     for (int i = start_row; i < start_row + num_rows; i++)

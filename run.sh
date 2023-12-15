@@ -12,9 +12,11 @@ executable=""
 # Set the executable based on the provided argument
 if [ "$executable_type" == "sequential" ]; then
     executable="./build/sequential"
+    make clean
     make sequential
 elif [ "$executable_type" == "parallel" ]; then
     executable="./build/parallel"
+    make clean
     make parallel
 else
     echo "Invalid exe type. Supported types are: sequential, parallel"
@@ -40,7 +42,7 @@ for ((i=0; i<${#num_rows[@]}; i++)); do
             else
                 for num_of_processes in "${processes[@]}"; do
                     echo "Running in parallel with num_rows=$N, num_cols=$M, prob_of_life=$prob_of_life, repetitions=$num_of_repetitions, processes=$num_of_processes"
-                    mpirun -np $num_of_processes $executable $N $M $prob_of_life $num_of_repetitions
+                    mpirun -np $num_of_processes $executable $N $M $prob_of_life $num_of_repetitions false
                 done
             fi
         done

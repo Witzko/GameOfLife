@@ -1,11 +1,15 @@
 #include <iostream>
 #include <vector>
 #include <mpi.h>
+#include <numeric>
 #include <cassert>
 #include <string>
 #include <sstream>
+#include <unistd.h>
 #include "../../include/Generation.hpp"
 #include "../../include/functions.hpp"
+
+
 
 int main(int argc, char **argv)
 {
@@ -69,48 +73,208 @@ int main(int argc, char **argv)
     /*
         Initialization of Generation object: Depends on weak/strong scaling flag
     */
-    Generation current_gen;
+    Generation current_gen, next_gen;
 
-    if (weak_scaling_flag == true)
+    /*
+        If weak scaling, then the dimensions provided should be divided by the amount of processors in
+        each x-y direction based on the cartesian communicator domain.
+    */
+    if (!weak_scaling_flag)
     {
-        current_gen = Generation{row_size * size, col_size * size, prob_of_life}; // if weak scaling, the matrix size of one process is given by num_rows, num_cols and the full matrix size is therefore
-                                                                                  // row_size * size (= num of processes), col_size * size
-    }
-    else
-    {
-        current_gen = Generation{row_size, col_size, prob_of_life}; // if strong scaling, the matrix size of one process is dynamic. It gets evaluated in the function calculateNextGenParallel
+        row_size = row_size / dims[0];
+        col_size = col_size / dims[1];
     }
 
-#ifdef DEBUG
-    current_gen.printGeneration("first_gen");
-#endif
-
-    Generation next_gen = current_gen; // tmp same values as first gen for first calculation
+    current_gen = Generation(row_size, col_size, prob_of_life);
 
     double start_time, end_time;
     std::vector<double> times;
 
+    /*
+        Define the MPI_CELL type for the MPI communication.
+    */
+    MPI_Datatype MPI_CELL;
+    MPI_Datatype types[1] = {MPI_CHAR};
+    int blocklength[1] = {1};
+    MPI_Aint displacement[1] = {0};
+    MPI_Type_create_struct(1, blocklength, displacement, types, &MPI_CELL);
+    MPI_Type_commit(&MPI_CELL);
+
+    /*
+        Define the vector padding type for the MPI communication of the left and right borders.
+    */
+    int ghost_layer_size = 1;
+    int col_size_wghost = col_size + 2 * ghost_layer_size; // As the column is added by one layer on each side
+    int number_of_elems = row_size; // The size of the left/right border
+
+    MPI_Datatype MPI_COL_PADDING_WGHOST;
+    MPI_Type_vector(number_of_elems, 1, col_size_wghost, MPI_CELL, &MPI_COL_PADDING_WGHOST);
+    MPI_Type_commit(&MPI_COL_PADDING_WGHOST);
+
+    /*
+        Create the custom datatype used for the MPI gather of all sub-grids into one global grid.
+    */
+    std::vector<Cell> global_grid;
+
+    MPI_Datatype recvGridBlock, recvGlobalGridBlock;
+
+    int global_row_size = row_size * dims[0];
+    int global_col_size = col_size * dims[1];
+    int global_sizes_direction[2] = {global_row_size, global_col_size};
+    int local_sizes_direction[2] = {row_size, col_size};
+    int local_start_indexes[2] = {0,0};
+
+    /*
+        Create MPI datatype for the master receiving all sub-grids and combining them into the global grid.
+    */
+    if (rank == 0)
+    {
+        global_grid = std::vector<Cell>(global_row_size * global_col_size, Cell('d'));
+
+        /*
+            Create a datatype of the receive block for all the sub-grids
+        */
+        MPI_Type_create_subarray(ndim, global_sizes_direction, local_sizes_direction, local_start_indexes,
+                                 MPI_ORDER_C, MPI_CELL, &recvGridBlock);
+
+        /*
+            Resize the recvGridBlock so that when col_size elements have been recevied/placed by the master, start
+            to place the next rank/senders elements instead into the next block.
+
+            For example: 6x6 grid of 9 processors
+           |1block|2block|3block|
+           |--------------------|
+           | A  A | B  B | C  C |
+           | A  A | B  B | C  C |
+           |--------------------|
+           | D  D | E  E | F  F |
+           | D  D | E  E | F  F |
+           |--------------------|
+           | G  G | H  H | I  I |
+           | G  G | H  H | I  I |
+           |--------------------|
+        */
+        MPI_Type_create_resized(recvGridBlock, 0, col_size * sizeof(Cell), &recvGlobalGridBlock);
+        MPI_Type_commit(&recvGlobalGridBlock);
+    }
+
+
+    /*
+        Each process handles one single block.
+    */
+    int num_blocks_per_proc[size];
+    for (int i = 0; i < size; i++) {
+        num_blocks_per_proc[i] = 1;
+    }
+
+    /*
+        col_padding_block contains the padding (num of col_size) of each sub-grid/block in the global grid.
+
+        A 6x6 grid of 9 processes contains the following col_padding_block:
+        col_padding_block[9] = {0, 1, 2, 6, 7, 8, 12, 13, 14}
+
+       [0]    [1]    [2]
+        | A  A | B  B | C  C |
+        | A  A | B  B | C  C |
+       [3]    [4]    [5]
+        | D  D | E  E | F  F |
+        | D  D | E  E | F  F |
+       [6]    [7]    [8]
+        | G  G | H  H | I  I |
+        | G  G | H  H | I  I |
+    */
+    int col_padding_block[size];
+    int k = 0;
+    for (int i = 0; i < dims[0]; i++)
+    {
+        for (int j = 0; j < dims[1]; j++)
+        {
+            col_padding_block[k++] = j  +  i * (row_size * dims[1]);
+        }
+    }
+
+    /*
+        Collect the global grid using Gatherv
+    */
+    MPI_Gatherv(&current_gen.getCell(0,0), row_size * col_size, MPI_CELL,
+                &global_grid[0], num_blocks_per_proc, col_padding_block, recvGlobalGridBlock, 0,
+                cart_comm);
+
+#ifdef DEBUG
+    MPI_Barrier(cart_comm);
+    if (rank == 0){
+        printf("\n--ORIGINAL GLOBAL GRID--\n");
+        printGrid(global_grid, global_row_size, global_col_size);
+    }
+    MPI_Barrier(cart_comm);
+#endif
+
+    /*
+        Start the algorithm
+     */
+    std::vector<Cell> next_gen_cells, curr_gen_cells;
     MPI_Barrier(cart_comm);
     for (int i = 0; i < number_of_repetitions; i++)
     {
+
+#ifdef DEBUG
+        MPI_Barrier(cart_comm);
+        if (rank == 0) {
+            // Copy the global_grid to curr_gen_cells:
+            next_gen_cells = std::vector<Cell>(global_row_size*global_col_size, Cell('d'));
+            curr_gen_cells = std::vector<Cell>(global_row_size*global_col_size, Cell('d'));
+            for (int i = 0; i < global_row_size; i++) {
+                for (int j = 0; j < global_col_size; j++) {
+                    if (global_grid[i*global_col_size+j].getState()=='a') {
+                        curr_gen_cells[i*global_col_size+j].setStateToAlive();
+                    }
+                }
+            }
+        }
+        MPI_Barrier(cart_comm);
+#endif
+
         start_time = MPI_Wtime();
+        next_gen = calculateNextGenParallel(current_gen, cart_comm, MPI_CELL, MPI_COL_PADDING_WGHOST, ghost_layer_size);
 
-        calculateNextGenParallel(current_gen, next_gen, cart_comm, weak_scaling_flag);
-
-        MPI_Barrier(cart_comm); // Träff said this is kind of okay in the lecture, but he would prefer a solution without two MPI Barriers but just one before the for loop.
-                                // Stuff to think about when implementing Exercise 3 + 4 ...
         end_time = MPI_Wtime();
         times.push_back(end_time - start_time);
 
 #ifdef DEBUG
         MPI_Barrier(cart_comm);
-        if (rank == 0)
-        {
-            Generation next_gen_sequential = calculateNextGenSequentially(current_gen);
-            if (!areGenerationsEqual(next_gen, next_gen_sequential))
+
+        MPI_Gatherv(&next_gen.getCell(0,0), row_size * col_size, MPI_CELL,
+                    &global_grid[0], num_blocks_per_proc, col_padding_block, recvGlobalGridBlock, 0,
+                    cart_comm);
+        /*
+            Print global grid and comapre it with sequential version
+         */
+        if (rank == 0){
+            printf("\n--GLOBAL GRID--\n");
+            printf("Parallel Iteration: %d\n", i);
+            printGrid(global_grid, global_row_size, global_col_size);
+
+            // Copy the global_grid to next_gen_cells:
+            for (int i = 0; i < global_row_size; i++)
+            {
+                for (int j = 0; j < global_col_size; j++)
+                {
+                    if (global_grid[i*global_col_size+j].getState()=='a')
+                    {
+                        next_gen_cells[i*global_col_size+j].setStateToAlive();
+                    }
+                }
+            }
+
+            Generation global_next_gen(next_gen_cells, global_row_size, global_col_size);
+            Generation global_curr_gen(curr_gen_cells, global_row_size, global_col_size);
+
+            Generation next_gen_sequential = calculateNextGenSequentially(global_curr_gen);
+
+            if (!areGenerationsEqual(global_next_gen, next_gen_sequential))
             {
                 std::cout << "The sequential and parallel solution are not the same! Check the /debug folder." << std::endl;
-                next_gen.printGeneration("parallel_gen");
+                global_next_gen.printGeneration("parallel_gen");
                 next_gen_sequential.printGeneration("sequential_gen");
             }
         }
@@ -120,27 +284,54 @@ int main(int argc, char **argv)
         current_gen = next_gen;
     }
 
-    MPI_Comm_free(&cart_comm);
-    MPI_Finalize();
-
     /*
         MPI Section End
 
         POST PROCESSING Section Start
     */
-
-#ifdef DEBUG
-    next_gen.printGeneration("last_gen");
-#endif
-
     int alive_cells{0};
     int dead_cells{0};
     countAliveAndDeadCells(current_gen, alive_cells, dead_cells);
-    std::cout << "Last generation \n"
-                 "Alive Cells: "
-              << alive_cells << " Dead Cells: " << dead_cells << std::endl;
 
-    std::cout << "Average calculation time in micro seconds per generation: " << averageVectorElements(times) << std::endl;
+    /*
+        Find the total number of alive and dead cells
+    */
+    int global_alive_cells, global_dead_cells;
+    MPI_Reduce(&alive_cells, &global_alive_cells, 1, MPI_INT, MPI_SUM, 0, cart_comm);
+    MPI_Reduce(&dead_cells, &global_dead_cells, 1, MPI_INT, MPI_SUM, 0, cart_comm);
+
+    /*
+        Find the time of slowest processor as well as the average time per iteration.
+    */
+    double global_average_time, global_total_time;
+    double average_time = averageVectorElements(times);
+    double total_time = std::reduce(times.begin(), times.end());
+
+    // Find the average time per repetition
+    MPI_Reduce(&average_time, &global_average_time, 1, MPI_DOUBLE, MPI_SUM, 0, cart_comm);
+    global_average_time = global_average_time / size;
+
+    // Find the maximum time (i.e. the slowest processor)
+    MPI_Reduce(&total_time, &global_total_time, 1, MPI_DOUBLE, MPI_MAX, 0, cart_comm);
+
+    if (rank == 0) {
+        std::cout << "Total alive cells: " << global_alive_cells
+                  << ", Total dead cells: " << global_dead_cells << std::endl;
+
+        std::cout << "Average time per iteration/repetition: " << averageVectorElements(times)
+                  << ", Total time taken (in parallel app the finish time for slowest proc): " << global_total_time << std::endl;
+    }
+
+    MPI_Type_free(&MPI_CELL);
+    MPI_Type_free(&MPI_COL_PADDING_WGHOST);
+    if (rank == 0) {
+        MPI_Type_free(&recvGlobalGridBlock);
+        MPI_Type_free(&recvGridBlock);
+    }
+
+    MPI_Comm_free(&cart_comm);
+    MPI_Finalize();
+
     /*
         POST PROCESSING Section End
     */

@@ -13,3 +13,4 @@
 /build/parallel
 /build/sequential
 /debug/*.csv
+/.idea

@@ -22,7 +22,7 @@ int main(int argc, char **argv)
     /*
         Initialization:
     */
-    Generation current_gen{row_size, col_size, prob_of_life};
+    Generation current_gen(row_size, col_size, prob_of_life);
 #ifdef DEBUG
     current_gen.printGeneration("first_gen");
 #endif

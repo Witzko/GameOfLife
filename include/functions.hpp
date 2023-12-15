@@ -17,7 +17,8 @@ Generation calculateNextGenSequentially(const Generation &current_gen);
     @param num_of_processes number of processes
     @return Generation Object
 */
-void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm, bool weak_scaling_flag);
+Generation calculateNextGenParallel(const Generation &current_gen, MPI_Comm &cart_comm,
+                                    MPI_Datatype &MPI_CELL, MPI_Datatype &MPI_COL_PADDING_WGHOST, int ghost_layer_size);
 
 /**
     Iterates over the grid of a generation and increments the counters correspondingly
@@ -27,7 +28,9 @@ void calculateNextGenParallel(const Generation &current_gen, Generation &next_ge
     @param dead_count dead count reference
     @return void
 */
+
 void countAliveAndDeadCells(const Generation &gen, int &alive_count, int &dead_count);
+
 
 /**
     Takes two generations and compares them entry by entry. generations must be of equal size
@@ -39,6 +42,16 @@ void countAliveAndDeadCells(const Generation &gen, int &alive_count, int &dead_c
 bool areGenerationsEqual(const Generation &gen_one, const Generation &gen_two);
 
 /**
+    Print the grid in order
+
+    @param vector Vector grid
+    @param rows Number of rows
+    @param columns Number of columns
+    @return void
+*/
+void printGrid(std::vector<Cell> &vector, int rows, int columns);
+
+/**
     Retrieves subMatrix of specified size from an input matrix
 
     @param matrix Matrix object reference
@@ -48,7 +61,7 @@ bool areGenerationsEqual(const Generation &gen_one, const Generation &gen_two);
     @param num_cols Number of cols for resulting submatrix
     @return Matrix Object
 */
-std::vector<std::vector<Cell>> getSubMatrix(const std::vector<std::vector<Cell>> &matrix, int start_row, int start_col, int num_rows, int num_cols);
+std::vector<Cell> getSubMatrix(std::vector<Cell> &matrix, int start_row, int start_col, int num_rows, int num_cols);
 
 /**
     Averages the values in a std::vector

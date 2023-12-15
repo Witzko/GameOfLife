@@ -1,25 +1,29 @@
 #include "../include/Cell.hpp"
 
-Cell::Cell(char s) : state(s) {}
+Cell::Cell(char s) : _state(s) {}
+
+void Cell::setState(char s) {
+    this->_state = s;
+}
 
 char Cell::getState() const
 {
-    return this->state;
+    return this->_state;
 }
 
 void Cell::setStateToDead()
 {
-    this->state = 'd';
+    this->_state = 'd';
 }
 
 void Cell::setStateToAlive()
 {
-    this->state = 'a';
+    this->_state = 'a';
 }
 
 bool Cell::isAlive() const
 {
-    if (this->state == 'a')
+    if (this->_state == 'a')
     {
         return true;
     }
@@ -29,5 +33,5 @@ bool Cell::isAlive() const
 
 bool Cell::operator==(const Cell &other) const
 {
-    return state == other.state;
+    return _state == other._state;
 }

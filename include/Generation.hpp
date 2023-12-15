@@ -6,8 +6,9 @@
 
 class Generation
 {
-
-  std::vector<std::vector<Cell>> generation;
+  std::vector<Cell> _generation;
+  int _rows;
+  int _cols;
 
 public:
   /**
@@ -23,17 +24,17 @@ public:
     @param _generation Matrix object
     @return Generation object
   */
-  explicit Generation(std::vector<std::vector<Cell>> _generation);
+  explicit Generation(std::vector<Cell> generation, int rows, int cols);
 
   /**
     Constructs a Generation of size NxN and the grid of cells with a certain probability of being dead or alive for each cell
 
-    @param row_size row size of generation matrix
-    @param col_size col size of generation matrix
+    @param rows row size of generation matrix
+    @param cols col size of generation matrix
     @param prob_of_life Probability of individual cells being alive
     @return Generation Object
 */
-  Generation(int row_size, int col_size, float prob_of_life);
+  Generation(int rows, int cols, float prob_of_life);
 
   /**
       Returns the Row Size of the Generation matrix
@@ -52,16 +53,28 @@ public:
 
     @return Matrix member
   */
-  const std::vector<std::vector<Cell>> &getGeneration() const;
+  const std::vector<Cell> &getGeneration() const;
 
   /**
     non-const Getter of the underlying Matrix member of the Generation object
 
     @return Matrix member
   */
-  std::vector<std::vector<Cell>> &getGeneration();
+  std::vector<Cell> &getGeneration();
 
   /**
+    Return cell at specific index in the generation grid.
+
+    @param i Row index
+    @param j Column index
+
+    @return Cell at index
+  */
+  Cell &getCell(int i, int j);
+  const Cell &getCell(int i, int j) const;
+
+
+    /**
     Counts Alive Neighbours of cell. Each cell has 8 neighbours in the Grid
 
     @param left_col_idx Left col index
@@ -72,7 +85,8 @@ public:
     @param row_idx row index
     @return integer alive count
   */
-  int countAliveNeighbours(const int &left_col_idx, const int &right_col_idx, const int &lower_row_idx, const int &upper_row_idx, const int &row_idx, const int &column_idx) const;
+  int countAliveNeighbours(const int &left_col_idx, const int &right_col_idx, const int &lower_row_idx,
+                           const int &upper_row_idx, const int &row_idx, const int &column_idx) const;
 
   /**
      Prints the Generation Object
@@ -80,5 +94,5 @@ public:
     @param filename takes a filename without filetype ending
     @return void
   */
-  void printGeneration(const std::string &filepath) const;
+  void printGeneration(const std::string &filepath);
 };

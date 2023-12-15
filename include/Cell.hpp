@@ -2,7 +2,7 @@
 
 class Cell
 {
-    char state;
+    char _state;
 
 public:
     /**
@@ -19,6 +19,13 @@ public:
         @return Cell object member "state"
     */
     char getState() const;
+
+    /**
+        Sets the state member of Cell object
+
+        @return void
+    */
+    void setState(char s);
 
     /**
         Sets the state member of Cell object to Dead
