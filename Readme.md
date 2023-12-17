@@ -105,7 +105,7 @@ The advantage of the first two is obviously simplicity. However, the advantage o
 **Do we need classes?**
 
 Probably not, but they are convenient for the Cell. Look at this example:
-
+```
 class Cell
 {
 private:
@@ -121,6 +121,7 @@ public:
         this->state = 'a';
     }
 };
+```
 
 The member functions like getter, setter make things a little easier and safer. The alternative is to fill up the std::vector with chars and assign it directly. 
 Also okay I guess... Memory concerns: Does the cell need more memory? No! member functions are not stored in the object but the class definition. Both are 1 byte!
@@ -136,13 +137,13 @@ As stated in [1], chapter 3.2.4, an MPI program can be compiled with a normal C/
 #### 2.2.1 Cell (Class)
 
 **members:** char state;
-**member-functions:** setStateAlive(), setStateToDead(), getState(), isAlive(), Constructor
+**member-functions:** setState(), setStateAlive(), setStateToDead(), getState(), isAlive(), Constructor
 
 
 #### 2.2.5 Generation (Class)
 
-**members:** std::vector<std::vector<Cell>> (Matrix)
-**member-functions:** printGeneration(), getGeneration(), countAliveNeighbours(), Constructors, countAliveNeighbours(), Parameter Constructor with probability of alive cells etc., default constructor, getRowSize(), getColSize()
+**members:** std::vector<Cell> (Matrix)
+**member-functions:** getCell(), printGeneration(), getGeneration(), countAliveNeighbours(), Constructors, countAliveNeighbours(), Parameter Constructor with probability of alive cells etc., default constructor, getRowSize(), getColSize()
 
 
 #### 2.2.6 Functions
@@ -306,20 +307,20 @@ which is exactly the outcome what we want.
 
 **Create initial Generation depening on weak/strong scaling**
 
-If the process size is fixed (weak scaling) we take the arguments row_size, col_size and multiply these values with the number of processes (size variable here) to get the full matrix size.
+If weak scaling is enabled, then the dimensions provided should be divided by the amount of processors in
+each x-y direction based on the cartesian communicator domain to define each sub-grid that each processor should handle.
 
 ------------------------------------------------------------------------------------------
     Generation current_gen;
 
-    if (weak_scaling_flag == true)
+    if (!weak_scaling_flag)
     {
-        current_gen = Generation{row_size * size, col_size * size, prob_of_life}; // if weak scaling, the matrix size of one process is given by num_rows, num_cols and the full matrix size is therefore
-                                                                                  // row_size * size (= num of processes), col_size * size
+        row_size = row_size / dims[0];
+        col_size = col_size / dims[1];
     }
-    else
-    {
-        current_gen = Generation{row_size, col_size, prob_of_life}; // if strong scaling, the matrix size of one process is dynamic. It gets evaluated in the function calculateNextGenParallel
-    }
+
+    current_gen = Generation(row_size, col_size, prob_of_life);
+
 ------------------------------------------------------------------------------------------
 
 **Assign workload to processes**
@@ -327,7 +328,7 @@ If the process size is fixed (weak scaling) we take the arguments row_size, col_
 The next task is to split up the Generation in specific parts for the processes. We use our function calculateNextGenParallel() here:
 
 ------------------------------------------------------------------------------------------
-void calculateNextGenParallel(const Generation &current_gen, Generation &next_gen, MPI_Comm &cart_comm, bool weak_scaling_flag)
+void calculateNextGenParallel(const Generation &current_gen, MPI_Comm &cart_comm, MPI_Datatype &MPI_CELL, MPI_Datatype &MPI_COL_PADDING_WGHOST, int ghost_layer_size)
 {
 
     int row_size = current_gen.getRowSize();
@@ -399,6 +400,8 @@ The code is only executed by the process with rank == 0, and we after calculated
 used to compare the two std::vector<std::vector<Cell>>.
 
 ### 2.6 Exercise 3
+
+Yidiyada blehbleh I like honey.
 
 ### 2.7 Exercise 4
 
