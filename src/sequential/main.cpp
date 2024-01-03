@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     current_gen.printGeneration("first_gen");
 #endif
 
-    Generation next_gen{};
+    Generation next_gen;
 
     /*
         MPI Section Start:

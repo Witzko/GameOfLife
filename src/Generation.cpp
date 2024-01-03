@@ -4,9 +4,9 @@
 #include <random>
 #include <memory>
 
-Generation::Generation(std::vector<Cell> generation, int rows, int cols) : _generation(generation), _rows(rows), _cols(cols)
-{
-}
+Generation::Generation() {}
+
+Generation::Generation(std::vector<Cell>&& generation, int rows, int cols) : _generation(std::move(generation)), _rows(rows), _cols(cols) {}
 
 const std::vector<Cell> &Generation::getGeneration() const
 {
@@ -49,6 +49,14 @@ Generation::Generation(int rows, int cols, float prob_of_life)
         }
     }
 }
+
+void Generation::setGenerationAndProperties(std::vector<Cell>&& generation, int rows, int cols)
+{
+    this->_generation = std::move(generation);
+    this->_rows = rows;
+    this->_cols = cols;
+}
+
 
 int Generation::getRowSize() const
 {

@@ -13,12 +13,25 @@ Generation calculateNextGenSequentially(const Generation &current_gen);
 /**
     Calculates the next Generation, based on the current Generation in multiple processes using MPI
 
-    @param current_gen Generation reference object
-    @param num_of_processes number of processes
+    @param current_gen Generation r-value reference object
+    @param cart_comm MPI communicator
+    @param MPI_CELL MPI datatype representing the Cell class
+    @param MPI_COL_PADDING_WHALO MPI datatype for Isend/Irecv left/right borders
+    @param halo_layer_size the halo layer size
     @return Generation Object
 */
-Generation calculateNextGenParallel(const Generation &current_gen, MPI_Comm &cart_comm,
-                                    MPI_Datatype &MPI_CELL, MPI_Datatype &MPI_COL_PADDING_WGHOST, int ghost_layer_size);
+Generation calculateNextGenParallel(Generation &&current_gen, MPI_Comm &cart_comm,
+                                    MPI_Datatype &MPI_CELL, MPI_Datatype &MPI_COL_PADDING_WHALO, int halo_layer_size);
+
+/**
+    Calculates the next Generation using collective neighbour communication,
+    based on the current Generation in multiple processes using MPI
+
+    @param current_gen Generation reference object
+    @param cart_comm MPI communicator
+    @return Generation Object
+*/
+Generation calculateNextGenParallelWCollNeighbourComm(const Generation &current_gen, MPI_Comm &cart_comm);
 
 /**
     Iterates over the grid of a generation and increments the counters correspondingly

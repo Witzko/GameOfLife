@@ -8,7 +8,7 @@ Generation calculateNextGenSequentially(const Generation &current_gen)
     int row_size = current_gen.getRowSize();
     int col_size = current_gen.getColSize();
     std::vector<Cell> next_gen_cells(row_size * col_size, Cell{'d'});
-    Generation next_gen(next_gen_cells, row_size, col_size);
+    Generation next_gen(std::move(next_gen_cells), row_size, col_size);
 
     for (int i = 0; i < row_size; ++i)
     {
@@ -30,11 +30,7 @@ Generation calculateNextGenSequentially(const Generation &current_gen)
             {
                 next_gen.getCell(i,j).setState('a');
             }
-            else
-            {
-                next_gen.getCell(i,j).setState('d');
-            }
-        };
+        }
     }
 
     return next_gen;
@@ -52,13 +48,22 @@ void printGrid(std::vector<Cell> &vector, int rows, int columns)
     fflush(stdout);
 }
 
-Generation calculateNextGenParallel(const Generation &current_gen, MPI_Comm &cart_comm,
-                                    MPI_Datatype &MPI_CELL, MPI_Datatype &MPI_COL_PADDING_WGHOST, int ghost_layer_size)
+Generation calculateNextGenParallelWCollNeighbourComm(const Generation &current_gen, MPI_Comm &cart_comm)
+{
+    /*
+        For Peter BOIIIII
+    */
+    std::cout << "This is only here so that no \"cart_comm is unused\" errors happens" << cart_comm << std::endl;
+    return current_gen;
+}
+
+Generation calculateNextGenParallel(Generation &&current_gen, MPI_Comm &cart_comm,
+                                    MPI_Datatype &MPI_CELL, MPI_Datatype &MPI_COL_PADDING_WHALO, int halo_layer_size)
 {
     int row_size = current_gen.getRowSize();
     int col_size = current_gen.getColSize();
-    int row_size_wghost = row_size + 2 * ghost_layer_size;
-    int col_size_wghost = col_size + 2 * ghost_layer_size;
+    int row_size_whalo = row_size + 2 * halo_layer_size;
+    int col_size_whalo = col_size + 2 * halo_layer_size;
 
     int dims[2];
     int rank, size;
@@ -71,16 +76,25 @@ Generation calculateNextGenParallel(const Generation &current_gen, MPI_Comm &car
 
     MPI_Cart_get(cart_comm, ndim, dims, periods, coords);
 
-    // Create new generation with ghost layer and copy the current generation to it
-    std::vector<Cell> current_gen_cells_wghost(row_size_wghost*col_size_wghost, Cell('d'));
-    Generation current_gen_wghost(current_gen_cells_wghost, row_size_wghost, col_size_wghost);
+/*
+    Create new generation with halo layer and move the current generation to it:
+    | halo   halo   halo |
+    | halo curr_gen halo |
+    | halo   halo   halo |
+ */
 
-    // Copy the values in current_gen into current_gen_wghost (i.e. current_gen_wghost contains matrix with inner matrix current_gen)
+    std::vector<Cell> current_gen_cells_whalo(row_size_whalo * col_size_whalo, Cell('d'));
+
     for (int i = 0; i < row_size; i++) {
-        for (int j = 0; j < col_size; j++) {
-            current_gen_wghost.getCell(i+ghost_layer_size, j+ghost_layer_size).setState(current_gen.getCell(i,j).getState());
-        }
+        int padding_1 = i*col_size;
+        int padding_2 = (i+1)*col_size;
+        int padding_3 = halo_layer_size + (i+1)*col_size_whalo;
+        std::copy(current_gen.getGeneration().begin() + padding_1,  // Left col starting index
+                  current_gen.getGeneration().begin() + padding_2,  // Right col end index
+                  current_gen_cells_whalo.begin() + padding_3);     // Starting index with halo
     }
+
+    Generation current_gen_whalo(std::move(current_gen_cells_whalo), row_size_whalo, col_size_whalo);
 
     // Find the ranks of the neighbours
     int upper_left_rank, upper_rank, upper_right_rank, left_rank, right_rank, lower_left_rank, lower_rank, lower_right_rank;
@@ -102,60 +116,59 @@ Generation calculateNextGenParallel(const Generation &current_gen, MPI_Comm &car
     MPI_Request send_request[8], recv_request[8];
     int tag[8] = {0, 1, 2, 3, 4, 5, 6, 7};
 
-    // Send (only the "inner" matrix of current_gen_wghost)
-    MPI_Isend(&current_gen_wghost.getCell(1,1), col_size, MPI_CELL, upper_rank, tag[0], cart_comm, &send_request[0]); // Upper border
-    MPI_Isend(&current_gen_wghost.getCell(row_size_wghost-2,1), col_size, MPI_CELL, lower_rank, tag[1], cart_comm, &send_request[1]); // Lower border
-    MPI_Isend(&current_gen_wghost.getCell(1,1), 1, MPI_COL_PADDING_WGHOST, left_rank, tag[2], cart_comm, &send_request[2]); // Left border
-    MPI_Isend(&current_gen_wghost.getCell(1,col_size_wghost-2), 1, MPI_COL_PADDING_WGHOST, right_rank, tag[3], cart_comm, &send_request[3]); // Right border
+    // Send (only the "inner" matrix of current_gen_whalo)
+    MPI_Isend(&current_gen_whalo.getCell(1,1), col_size, MPI_CELL, upper_rank, tag[0], cart_comm, &send_request[0]); // Upper border
+    MPI_Isend(&current_gen_whalo.getCell(row_size_whalo-2,1), col_size, MPI_CELL, lower_rank, tag[1], cart_comm, &send_request[1]); // Lower border
+    MPI_Isend(&current_gen_whalo.getCell(1,1), 1, MPI_COL_PADDING_WHALO, left_rank, tag[2], cart_comm, &send_request[2]); // Left border
+    MPI_Isend(&current_gen_whalo.getCell(1,col_size_whalo-2), 1, MPI_COL_PADDING_WHALO, right_rank, tag[3], cart_comm, &send_request[3]); // Right border
 
-    MPI_Isend(&current_gen_wghost.getCell(1,1), 1, MPI_CELL, upper_left_rank, tag[4], cart_comm, &send_request[4]); // Upper-left corner
-    MPI_Isend(&current_gen_wghost.getCell(1,col_size_wghost-2), 1, MPI_CELL, upper_right_rank, tag[5], cart_comm, &send_request[5]); // Upper-right corner
-    MPI_Isend(&current_gen_wghost.getCell(row_size_wghost-2,1), 1, MPI_CELL, lower_left_rank, tag[6], cart_comm, &send_request[6]); // Lower-left corner
-    MPI_Isend(&current_gen_wghost.getCell(row_size_wghost-2,col_size_wghost-2), 1, MPI_CELL, lower_right_rank, tag[7], cart_comm, &send_request[7]); // Lower-right corner
+    MPI_Isend(&current_gen_whalo.getCell(1,1), 1, MPI_CELL, upper_left_rank, tag[4], cart_comm, &send_request[4]); // Upper-left corner
+    MPI_Isend(&current_gen_whalo.getCell(1,col_size_whalo-2), 1, MPI_CELL, upper_right_rank, tag[5], cart_comm, &send_request[5]); // Upper-right corner
+    MPI_Isend(&current_gen_whalo.getCell(row_size_whalo-2,1), 1, MPI_CELL, lower_left_rank, tag[6], cart_comm, &send_request[6]); // Lower-left corner
+    MPI_Isend(&current_gen_whalo.getCell(row_size_whalo-2,col_size_whalo-2), 1, MPI_CELL, lower_right_rank, tag[7], cart_comm, &send_request[7]); // Lower-right corner
 
-    // Receive (address of the ghost layer indexes)
-    MPI_Irecv(&current_gen_wghost.getCell(0,1), col_size, MPI_CELL, upper_rank, tag[1], cart_comm, &recv_request[0]); // Upper border
-    MPI_Irecv(&current_gen_wghost.getCell(row_size_wghost-1, 1), col_size, MPI_CELL, lower_rank, tag[0], cart_comm, &recv_request[1]); // Lower border
-    MPI_Irecv(&current_gen_wghost.getCell(1,0), 1, MPI_COL_PADDING_WGHOST, left_rank, tag[3], cart_comm, &recv_request[2]); // Left border
-    MPI_Irecv(&current_gen_wghost.getCell(1,col_size_wghost-1), 1, MPI_COL_PADDING_WGHOST, right_rank, tag[2], cart_comm, &recv_request[3]); // Right border
+    // Receive (address of the halo layer indexes)
+    MPI_Irecv(&current_gen_whalo.getCell(0,1), col_size, MPI_CELL, upper_rank, tag[1], cart_comm, &recv_request[0]); // Upper border
+    MPI_Irecv(&current_gen_whalo.getCell(row_size_whalo-1, 1), col_size, MPI_CELL, lower_rank, tag[0], cart_comm, &recv_request[1]); // Lower border
+    MPI_Irecv(&current_gen_whalo.getCell(1,0), 1, MPI_COL_PADDING_WHALO, left_rank, tag[3], cart_comm, &recv_request[2]); // Left border
+    MPI_Irecv(&current_gen_whalo.getCell(1,col_size_whalo-1), 1, MPI_COL_PADDING_WHALO, right_rank, tag[2], cart_comm, &recv_request[3]); // Right border
 
-    MPI_Irecv(&current_gen_wghost.getCell(0,0), 1, MPI_CELL, upper_left_rank, tag[7], cart_comm, &recv_request[4]); // Upper-left corner
-    MPI_Irecv(&current_gen_wghost.getCell(0,col_size_wghost-1), 1, MPI_CELL, upper_right_rank, tag[6], cart_comm, &recv_request[5]); // Upper-right corner
-    MPI_Irecv(&current_gen_wghost.getCell(row_size_wghost-1,0), 1, MPI_CELL, lower_left_rank, tag[5], cart_comm, &recv_request[6]); // Lower-left corner
-    MPI_Irecv(&current_gen_wghost.getCell(row_size_wghost-1, col_size_wghost-1), 1, MPI_CELL, lower_right_rank, tag[4], cart_comm, &recv_request[7]); // Lower-right corner
+    MPI_Irecv(&current_gen_whalo.getCell(0,0), 1, MPI_CELL, upper_left_rank, tag[7], cart_comm, &recv_request[4]); // Upper-left corner
+    MPI_Irecv(&current_gen_whalo.getCell(0,col_size_whalo-1), 1, MPI_CELL, upper_right_rank, tag[6], cart_comm, &recv_request[5]); // Upper-right corner
+    MPI_Irecv(&current_gen_whalo.getCell(row_size_whalo-1,0), 1, MPI_CELL, lower_left_rank, tag[5], cart_comm, &recv_request[6]); // Lower-left corner
+    MPI_Irecv(&current_gen_whalo.getCell(row_size_whalo-1, col_size_whalo-1), 1, MPI_CELL, lower_right_rank, tag[4], cart_comm, &recv_request[7]); // Lower-right corner
 
     MPI_Waitall(8, recv_request, MPI_STATUS_IGNORE);
 
-    // Create the next_gen and its cells
-    std::vector<Cell> next_gen_cells(row_size * col_size, Cell{'d'});
-    Generation next_gen(next_gen_cells, row_size, col_size);
+    // Reuse the Generation object current_gen which is already defined and store the next generation in it.
+    std::vector<Cell> next_gen_cells(row_size * col_size, Cell('d'));
+    current_gen.setGenerationAndProperties(std::move(next_gen_cells), row_size, col_size);
 
-    // Iterate over the inner grid of the ghost layer generation and count neighbours. Store the iterated
-    // cells into the next_gen
-    for (int i = 1; i < row_size_wghost - 1; ++i)
+    // Iterate over the inner grid of the halo layer generation and count neighbours. Store the iterated cells into the next_gen
+    for (int i = 1; i < row_size_whalo - 1; ++i)
     {
         int upper_row_idx = i - 1;
         int lower_row_idx = i + 1;
 
-        for (int j = 1; j < col_size_wghost - 1; ++j)
+        for (int j = 1; j < col_size_whalo - 1; ++j)
         {
             int left_col_idx = j - 1;
             int right_col_idx = j + 1;
-            int alive_neighbours_count = current_gen_wghost.countAliveNeighbours(left_col_idx, right_col_idx, lower_row_idx, upper_row_idx, j, i);
-            bool isAlive = current_gen_wghost.getCell(i,j).isAlive();
+            int alive_neighbours_count = current_gen_whalo.countAliveNeighbours(left_col_idx, right_col_idx, lower_row_idx, upper_row_idx, j, i);
+            bool isAlive = current_gen_whalo.getCell(i,j).isAlive();
 
             if (!isAlive && alive_neighbours_count == 3)
             {
-                next_gen.getCell(i-ghost_layer_size,j-ghost_layer_size).setStateToAlive();
+                current_gen.getCell(i-halo_layer_size,j-halo_layer_size).setStateToAlive();
             }
             else if (isAlive && (alive_neighbours_count == 3 || alive_neighbours_count == 2))
             {
-                next_gen.getCell(i-ghost_layer_size,j-ghost_layer_size).setStateToAlive();
+                current_gen.getCell(i-halo_layer_size,j-halo_layer_size).setStateToAlive();
             }
         }
     }
 
-    return next_gen;
+    return current_gen;
 }
 
 void countAliveAndDeadCells(const Generation &gen, int &alive_count, int &dead_count)
