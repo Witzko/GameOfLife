@@ -9,7 +9,6 @@
 #include "../../include/Generation.hpp"
 #include "../../include/functions.hpp"
 
-
 int main(int argc, char **argv)
 {
 
@@ -102,7 +101,7 @@ int main(int argc, char **argv)
     /*
         Define the MPI vector padding datatype for the MPI communication of the left and right borders (for indexing).
     */
-    const int halo_layer_size = 1; // 2024-01-03 -> For now only size 1 works anyway.
+    const int halo_layer_size = 1;                       // 2024-01-03 -> For now only size 1 works anyway.
     int col_size_whalo = col_size + 2 * halo_layer_size; // As the column is added by one layer on each side
 
     MPI_Datatype MPI_COL_PADDING_WHALO;
@@ -119,7 +118,7 @@ int main(int argc, char **argv)
     int global_col_size = col_size * dims[1];
     int global_sizes_direction[2] = {global_row_size, global_col_size};
     int local_sizes_direction[2] = {row_size, col_size};
-    int local_start_indexes[2] = {0,0};
+    int local_start_indexes[2] = {0, 0};
 
     /*
         Create MPI datatype for the master receiving all sub-grids and combining them into the global grid.
@@ -160,7 +159,8 @@ int main(int argc, char **argv)
         Each process handles one single block.
     */
     int num_blocks_per_proc[size];
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < size; i++)
+    {
         num_blocks_per_proc[i] = 1;
     }
 
@@ -186,20 +186,21 @@ int main(int argc, char **argv)
     {
         for (int j = 0; j < dims[1]; j++)
         {
-            col_padding_block[k++] = j  +  i * (row_size * dims[1]);
+            col_padding_block[k++] = j + i * (row_size * dims[1]);
         }
     }
 
     /*
         Collect the global grid using Gatherv
     */
-    MPI_Gatherv(&current_gen.getCell(0,0), row_size * col_size, MPI_CELL,
+    MPI_Gatherv(&current_gen.getCell(0, 0), row_size * col_size, MPI_CELL,
                 &global_grid[0], num_blocks_per_proc, col_padding_block, recvGlobalGridBlock, 0,
                 cart_comm);
 
 #ifdef DEBUG
     MPI_Barrier(cart_comm);
-    if (rank == 0){
+    if (rank == 0)
+    {
         printf("\n--ORIGINAL GLOBAL GRID--\n");
         printGrid(global_grid, global_row_size, global_col_size);
     }
@@ -218,8 +219,8 @@ int main(int argc, char **argv)
         /*
             For Peter boi. You can just comment/uncomment for now.
          */
-        next_gen = calculateNextGenParallel(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
-//        next_gen = calculateNextGenParallelWCollNeighbourComm(current_gen, cart_comm);
+        // next_gen = calculateNextGenParallel(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
+        next_gen = calculateNextGenParallelWCollNeighbourComm(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
 
         end_time = MPI_Wtime();
         times.push_back(end_time - start_time);
@@ -227,17 +228,19 @@ int main(int argc, char **argv)
 #ifdef DEBUG
         MPI_Barrier(cart_comm);
 
-        if (rank == 0) {
+        if (rank == 0)
+        {
             curr_gen_cells = global_grid; // As the global grid contains the global current_gen entries
         }
 
-        MPI_Gatherv(&next_gen.getCell(0,0), row_size * col_size, MPI_CELL,
+        MPI_Gatherv(&next_gen.getCell(0, 0), row_size * col_size, MPI_CELL,
                     &global_grid[0], num_blocks_per_proc, col_padding_block, recvGlobalGridBlock, 0,
                     cart_comm);
         /*
             Print global grid and compare it with sequential version
          */
-        if (rank == 0){
+        if (rank == 0)
+        {
             printf("\n--GLOBAL GRID--\n");
             printf("Parallel Iteration: %d\n", i);
             printGrid(global_grid, global_row_size, global_col_size);
@@ -292,7 +295,8 @@ int main(int argc, char **argv)
     // Find the maximum time (i.e. the slowest processor)
     MPI_Reduce(&total_time, &global_total_time, 1, MPI_DOUBLE, MPI_MAX, 0, cart_comm);
 
-    if (rank == 0) {
+    if (rank == 0)
+    {
         std::cout << "Total alive cells: " << global_alive_cells
                   << ", Total dead cells: " << global_dead_cells << std::endl;
 
@@ -302,7 +306,8 @@ int main(int argc, char **argv)
 
     MPI_Type_free(&MPI_CELL);
     MPI_Type_free(&MPI_COL_PADDING_WHALO);
-    if (rank == 0) {
+    if (rank == 0)
+    {
         MPI_Type_free(&recvGlobalGridBlock);
         MPI_Type_free(&recvGridBlock);
     }

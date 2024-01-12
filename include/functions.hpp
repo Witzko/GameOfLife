@@ -31,7 +31,8 @@ Generation calculateNextGenParallel(Generation &&current_gen, MPI_Comm &cart_com
     @param cart_comm MPI communicator
     @return Generation Object
 */
-Generation calculateNextGenParallelWCollNeighbourComm(const Generation &current_gen, MPI_Comm &cart_comm);
+Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, MPI_Comm &cart_comm,
+                                                      MPI_Datatype &MPI_CELL, MPI_Datatype &MPI_COL_PADDING_WHALO, int halo_layer_size);
 
 /**
     Iterates over the grid of a generation and increments the counters correspondingly
@@ -43,7 +44,6 @@ Generation calculateNextGenParallelWCollNeighbourComm(const Generation &current_
 */
 
 void countAliveAndDeadCells(const Generation &gen, int &alive_count, int &dead_count);
-
 
 /**
     Takes two generations and compares them entry by entry. generations must be of equal size
