@@ -9,6 +9,66 @@ This is the HPC Project of Group 16 for the TU Wien couse High Performance Compu
     -Adam Nordenhög, 12224156
     -Markus Witzko, 11709272
 
+In Part I, you find all the information specifying our implementations (what they can do and what they cannot do,
+what the input parameters are), how to run your codes, and stating what you think works (and what not).
+
+In Part II, you find all the information specifying our implementations (what they can do and what they cannot do,
+what the input parameters are), how to run your codes, and stating what you think works (and what not).
+
+
+
+# PART I: Short report: How to run, what it can (not) do
+
+## 1. How to build and run it
+
+The project can be build with the use of a Makefile, both in the optimized version and the debug version:
+
+----------------------------------------------------------------------------------------------------------------------
+    make clean
+
+    make sequential 
+    make parallel
+
+    make debug sequential
+    make debug parallel
+----------------------------------------------------------------------------------------------------------------------
+
+The object files and executables are then located in the /build folder.
+
+To run the program, we included a shell file **run.sh** for automation. The executable can also be called with the following commands and CL arguments:
+
+----------------------------------------------------------------------------------------------------------------------
+    mpirun -n 1 ./build/sequential <matrix_size_row> <matrix_size_col> <prob_of_life> <number_of_repetitions>
+    mpirun -n <num_of_processes> ./build/parallel <matrix_size_row> <matrix_size_col> <prob_of_life> <number_of_repetitions> <weak_scaling_flag>
+----------------------------------------------------------------------------------------------------------------------
+
+with the command line arguments:
+
+    - matrix_size_row: int
+    - matrix_size_col: int
+    - prob_of_life: float in range [0, 1.0]
+    - number_of_repetitions: int
+    - weak_scaling_flag: true | false 
+
+e.g.: mpirun -n 4 ./build/parallel 16 16 0.6 100 false
+
+## 2. What works (and what not)
+
+### 2.1 What works
+
+Everything up to Exercise 4 is working fine. We included a variety of debug possibilities to check the results. For instance, when running in DEBUG mode, the grid gets stored
+at crucial moments inside of the /debug folder in .csv format, which allows for direct comparison between iterations and implementations (sequential vs parallel).
+
+Moreover, we implemented a comparison function areGenerationsEqual(), which checks the equality of the parallel with the sequential version at the very end.
+
+Another aspect is the weak_scaling, which is also showing the expected results. During implementation, we defined DEBUG sections to check wheter the cell distribution in the matrix
+for each process is how we expect it to be, which always was the case.
+
+### 2.2 What (does not) work
+
+
+# Part II Long report: Implementation
+
 In the following, we discuss general ideas on how to implement the project, discuss the exercises in detail, talk about the benchmark and finally, interpret the results.
 
 ## 1. Task description
