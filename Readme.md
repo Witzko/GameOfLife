@@ -19,7 +19,24 @@ what the input parameters are), how to run your codes, and stating what you thin
 
 # PART I: Short report: How to run, what it can (not) do
 
-## 1. How to build and run it
+## 1. Project Structure
+
+The project folders are:
+
+    - /include: hpp files
+    - /src: cpp files
+    - /build: .o files, .exe files
+    - /debug: .csv debug files
+    - /pics: .png elements for documentation use
+    - /data: .odp file for documentation use
+
+Also in the root folder, we have:
+
+    - Makefile
+    - run.sh
+    - Readme.md
+
+## 2. How to build and run it
 
 The project can be build with the use of a Makefile, both in the optimized version and the debug version:
 
@@ -52,9 +69,9 @@ with the command line arguments:
 
 e.g.: mpirun -n 4 ./build/parallel 16 16 0.6 100 false
 
-## 2. What works (and what not)
+## 3. What works (and what not)
 
-### 2.1 What works
+### 3.1 What works
 
 Everything up to Exercise 4 is working fine. We included a variety of debug possibilities to check the results. For instance, when running in DEBUG mode, the grid gets stored
 at crucial moments inside of the /debug folder in .csv format, which allows for direct comparison between iterations and implementations (sequential vs parallel).
@@ -64,8 +81,9 @@ Moreover, we implemented a comparison function areGenerationsEqual(), which chec
 Another aspect is the weak_scaling, which is also showing the expected results. During implementation, we defined DEBUG sections to check wheter the cell distribution in the matrix
 for each process is how we expect it to be, which always was the case.
 
-### 2.2 What (does not) work
+### 3.2 What (does not) work
 
+Nothing, we did great.
 
 # Part II Long report: Implementation
 
