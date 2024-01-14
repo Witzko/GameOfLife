@@ -74,7 +74,7 @@ In the following, we discuss general ideas on how to implement the project, disc
 ## 1. Task description
 
 We are implementing a two dimensional stencil computation on small integers, and for that purpose we choose *Game of Life*.
-In the *Game of Life* a so-called **cell** can be either dead or alive. The cells are then distributed in a N x M matrix, which is 
+In the *Game of Life* a so-called **Cell** can be either dead or alive. The cells are then distributed in a N x M matrix, which is 
 illustrated in the following picture:
 
 ![](./pics/generic_matrix_scheme.PNG)
@@ -104,7 +104,7 @@ The neighbour situation corresponding to these constraints, is illustrated below
 ![](./pics/generic_matrix_neighbours.PNG)
 
 
-So the goal is to calculate the state of the new generation, meaning calculating each state of each cell, a lot of times. In the task they say we should aim for at least
+So the goal is to calculate the state of the new generation, meaning calculating each state of each cell, a lot of times. In the task desciption its stated we should aim for at least
 1000 generations. After that we should report the final state.
 
 ### 1.1 MPI and processes
@@ -114,7 +114,7 @@ So how does MPI come into play here? We use independent sub-sections of the matr
 ![](./pics/generic_matrix_processes.PNG)
 
 The calculations for these processes are only partly independent, because on the edges we need communication. However, if the block size for one process becomes big, we
-can expect a almost linear speed up according to Prof. Träff.
+can expect a almost linear speed up.
 
 
 ## 2. Task implementation
@@ -130,6 +130,8 @@ We note the task description: "The cell contents should be represented by a shor
 in the sense of maintaining at most two generations, the current and the next, that is at most two n×n matrices."
 
 **Data Structure for Matrix**:
+
+(We followed data structure decision principles from [2], Chapter 26 here)
 
 Given we are programming in C++, some possibilities from the std library include:
 
@@ -148,7 +150,7 @@ see if these advantages are important to us:
     - Vector vs. Array: An array might be the better choice if we want to allocate on the stack. 
                         --> not the case, our matrix size might lead to stack-overflow
 
-Therefore *std::vector* is a good choice.
+Therefore *std::vector* is a good choice. 
 
 **Data Type for Cell State**:
 
@@ -158,7 +160,7 @@ Some possibilities include:
     - short int (unsigned): 16 Bit
     - a single bit in a machine word, e.g. uint_64: 1 Bit
 
-The advantage of the first two is obviously simplicity. However, the advantage of the last one is space efficiency for sure. 
+The advantage of the first two is obviously simplicity. However, the advantage of the single bit is space efficiency for sure. A short int uses unnecessary, precious space. It does not have obvious advantages over a char.
 
 *Char* for the beginning is a good choice, but bitwise operations on a machine word seem like a interesting (but more complicated) alternative.
 
@@ -190,7 +192,8 @@ public:
 The member functions like getter, setter make things a little easier and safer.
 Memory concerns: Does the cell need more memory? No! member functions are not stored in the object but the class definition. Both are 1 byte!
 
-Same goes for a MatrixType and Generation consisting of a Matrix.
+Same goes for the Generation class consisting of a Matrix (std::vector). Note that we keep the Object oriented style to a
+minimum (we strongly agree with the principle "free your functions" from the conference talk *CppCon 2017: Klaus Iglberger “Free Your Functions!”*)
 
 **Compiling**
 
@@ -212,7 +215,7 @@ As stated in [1], chapter 3.2.4, an MPI program can be compiled with a normal C/
 
 #### 2.2.3 Functions
 
-There are also a couple of free functions. The two most important ones are shortly mentioned in the following.
+There are also a variety of free functions. The most important ones are shortly mentioned in the following.
 
 **calculateNextGenSequentially()**
 
@@ -227,31 +230,39 @@ There are also a couple of free functions. The two most important ones are short
 **output:** Generation object
 **algorithm:** Basics are similar to sequential version except that each processor calculate the next generation of its own sub-grid together with the ghost layer gathered from the adjacent sub-grids. More in depth details in chapter 3.
 
-Other than that we have some helper functions like **areGenerationsEqual()**, **countAliveAndDeadCells**, **getSubMatrix** (...) which are all used either for debug purposes or inside one of the functions from above.
+**calculateNextGenWCollComm()**
+input and output the same as above
+**algorithm**:
+
+Other than that we have some helper functions like **areGenerationsEqual()**, **countAliveAndDeadCells()**, **printGrid()** (...) which are all used either for debug purposes or inside one of the functions from above.
 
 ### 2.3 Optimizations, Asymptotic complexity
 
-There are two main optimization areas:
+Arguably the two most relevant optimization areas are:
     - performance (speed)
     - memory efficiency
 
 **Performance**:
 
-The performance of the program can be influenced by the choice of data-structures and algorithms. std::vector is a highly efficient, very robust and tested data-structure from the std::library. We use modern c++ move-semantics and pass-by-reference wherever applicable, to avoid unnecessary, expensive copies of big data.
+The performance of the program can be influenced, to a great deal, by the choice of data-structures and algorithms. std::vector is a highly efficient, very robust and tested data-structure from the std::library. We use modern c++ move-semantics and pass-by-reference wherever applicable, to avoid unnecessary, expensive copies of big data.
 
-Compiler flags are also important. E.g. -O3 -march=native
+With regards to the algorithm, it is quite likely that there is room for improvement, especially within the for loops.
+We do not claim to have found the "fastest" solution to the problem.
+
+Of course, compiler flags are also important for proper optimization. E.g. -O3 -march=native. There is bunch of other things we can try, e.g. using different compilers, optimize linking etc. 
 
 **Memory Efficiency**:
 
-We decided to use a short C data-type *char*. This is space-efficient, but a single bit in a machine word would suffice since we only need true/false (dead/alive). This overhead could have been reduced, but needs more time and careful planning.
+We decided to use a short C data-type *char*. This is space-efficient, but a single bit in a machine word would suffice since we only need true/false (dead/alive). This overhead could have been reduced, but needs more implementation time and careful planning. With memory being a valueable good in HPC, we would argue that the most efficient way of implementing the task is to use a single bit of a machine word.
 
-We at most keep two generations, i.e. two NxN sized vectors in the sequential version and one NxN together with one (N+ghost_layer)x(N+ghost_layer) in the parallel algorithm version, in memory.
+How many generations are in memory simultaneously?
+We at most keep two generations, i.e. two MxN sized vectors in the sequential version and one NxN together with one (N+ghost_layer)x(N+ghost_layer) in the parallel algorithm version, in memory.
 
 **Asymptotic Complexity, runtime**
 
-We iterate over two for loops (in the sequential variant) which would be a time complexity of O(n^2). However, we also need to check for each Cell the 8 neighbours.
+We iterate over two for loops (in the sequential variant) which would be a time complexity of O(n^2). However, we also need to check for each Cell the 8 neighbours, which adds a constant factor of 8 to the  time complexity.
 ***!!!!!!!TODO: Need to figure out the complexity on the parallel.!!!!!!!***
-In regards to the runtime: The runtime depends primarily depends on the size of the matrix.
+In regards to the runtime: The runtime primarily depends on the size of the matrix.
 
 ### 2.4 Exercise 1
 
@@ -259,7 +270,8 @@ In regards to the runtime: The runtime depends primarily depends on the size of 
 
 The first exercise is mostly the implementation of the basics which were mentioned in Chapters 2.1 -2.3 above, but in the following we demonstrate how we initialized and used our Classes and functions with MPI for the sequential solution.
 
-**Step 1:** We pass 3 command line arguments to the program: <matrix_dim_N> <matrix_dim_N> <prob_of_life> <number_of_repetitions>
+**Step 1:** We pass 4 command line arguments to the program: <matrix_dim_N> <matrix_dim_N> <prob_of_life> <number_of_repetitions>
+
 **Step 2:** We initialize the first Generation based on the input parameters (row/col sizes and probability of life)
 
 ------------------------------------------------------------------------------------------
@@ -293,7 +305,7 @@ The first exercise is mostly the implementation of the basics which were mention
 ------------------------------------------------------------------------------------------
 
 We calculate it a certain number of repetitions, which is an input to our program as well. The code is only executed by one single process (rank == 0).
-The times taken by MPI_WTime() are averaged later, and we store it in a std::vector.
+The times taken by MPI_WTime() are averaged later, and we store them in a std::vector.
 
 **Step 5:** We finalize MPI and Post Process the data --> output a summary of dead and alive cells, average time of calculation
 
@@ -806,3 +818,4 @@ Also just remove/change anything in the code you feel is necessary.
 ## Literature
 
 [1]: Lectures on Parallel Computing, SS2023, Jesper Larsson Träff
+[2]: C++ Das Umfassende Handbuch, Rheinwerk Computing, 2.Auflage 2020
