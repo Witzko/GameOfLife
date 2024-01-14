@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     /*
         Initialization
     */
-    if (argc != 6)
+    if (argc != 8)
     {
         std::cerr << "Usage: " << argv[0] << " <matrix_size_row> <matrix_size_col> <prob_of_life> <number_of_repetitions> <weak_scaling_flag>\n";
         return 1;
@@ -26,8 +26,8 @@ int main(int argc, char **argv)
     float prob_of_life = std::atof(argv[3]);
     int number_of_repetitions = std::atoi(argv[4]);
     std::string weak_scaling_string = argv[5];
-    int proc_x_dim = std::atoi(argv[6]);
-    int proc_y_dim = std::atoi(argv[7]);
+    [[maybe_unused]] int proc_x_dim = std::atoi(argv[6]);
+    [[maybe_unused]] int proc_y_dim = std::atoi(argv[7]);
     std::istringstream iss(weak_scaling_string);
     bool weak_scaling_flag;
     if (!(iss >> std::boolalpha >> weak_scaling_flag))
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     assert(0 <= rank && rank < size);
 
-    int dims[ndim] = {proc_x_dim, proc_y_dim};
+    int dims[ndim] = {0, 0};
     MPI_Dims_create(size, 2, dims);
 
     MPI_Comm cart_comm;

@@ -108,9 +108,10 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
 
     // Convert to Distributed Graph Comm
     MPI_Comm dist_graph_comm;
-    int neighbour_count = 8;
+    int src_neighbour_count = 8;
+    int rcv_neighbour_count = 8;
 
-    int sources[neighbour_count] = {
+    int sources[src_neighbour_count] = {
         upper_rank,
         lower_rank,
         left_rank,
@@ -120,42 +121,87 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
         lower_left_rank,
         lower_right_rank,
     };
-    int source_weights[neighbour_count] = {1};
 
-    MPI_Dist_graph_create_adjacent(cart_comm, neighbour_count, sources, source_weights, neighbour_count,
-                                   sources, source_weights, MPI_INFO_NULL, false, &dist_graph_comm);
-
-    int sendcounts[neighbour_count] = {col_size,
-                                       col_size,
-                                       1,
-                                       1,
-                                       1,
-                                       1,
-                                       1,
-                                       1};
-    int sdispls[neighbour_count] = {
-        (1 * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
-        ((row_size_whalo - 2) * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
-        (1 * col_size + 1) * static_cast<int>(sizeof(MPI_COL_PADDING_WHALO)),
-        (1 * col_size + (col_size_whalo - 2)) * static_cast<int>(sizeof(MPI_COL_PADDING_WHALO)),
-        (1 * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
-        (1 * col_size + (col_size_whalo - 2)) * static_cast<int>(sizeof(MPI_CELL)),
-        ((row_size_whalo - 2) * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
-        ((row_size_whalo - 2) * col_size + (col_size_whalo - 2)) * static_cast<int>(sizeof(MPI_CELL)),
+    int receives[rcv_neighbour_count] = {
+        lower_rank,
+        upper_rank,
+        right_rank,
+        left_rank,
+        lower_right_rank,
+        lower_left_rank,
+        upper_right_rank,
+        upper_left_rank,
     };
 
-    int rdispls[neighbour_count] = {
-        (0 * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
-        ((row_size_whalo - 1) * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
-        (1 * col_size + 0) * static_cast<int>(sizeof(MPI_COL_PADDING_WHALO)),
-        (1 * col_size + (col_size_whalo - 1)) * static_cast<int>(sizeof(MPI_COL_PADDING_WHALO)),
-        (0 * col_size + 0) * static_cast<int>(sizeof(MPI_CELL)),
-        (0 * col_size + (col_size_whalo - 1)) * static_cast<int>(sizeof(MPI_CELL)),
-        ((row_size_whalo - 1) * col_size + 0) * static_cast<int>(sizeof(MPI_CELL)),
-        ((row_size_whalo - 1) * col_size + (col_size_whalo - 1)) * static_cast<int>(sizeof(MPI_CELL)),
+    int source_weights[src_neighbour_count] = {0};
+    int rcv_weights[rcv_neighbour_count] = {0};
+
+    MPI_Dist_graph_create_adjacent(cart_comm, src_neighbour_count, sources, source_weights, rcv_neighbour_count,
+                                   receives, rcv_weights, MPI_INFO_NULL, false, &dist_graph_comm);
+
+    int sendcounts[src_neighbour_count] = {col_size,
+                                           col_size,
+                                           1,
+                                           1,
+                                           1,
+                                           1,
+                                           1,
+                                           1};
+
+    int rcvcounts[rcv_neighbour_count] = {col_size,
+                                          col_size,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1};
+
+    // int sdispls[src_neighbour_count] = {
+    //     (1 * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
+    //     ((row_size_whalo - 2) * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
+    //     (1 * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
+    //     (1 * col_size + (col_size_whalo - 2)) * static_cast<int>(sizeof(MPI_CELL)),
+    //     (1 * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
+    //     (1 * col_size + (col_size_whalo - 2)) * static_cast<int>(sizeof(MPI_CELL)),
+    //     ((row_size_whalo - 2) * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
+    //     ((row_size_whalo - 2) * col_size + (col_size_whalo - 2)) * static_cast<int>(sizeof(MPI_CELL)),
+    // };
+
+    // int rdispls[rcv_neighbour_count] = {
+    //     (0 * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
+    //     ((row_size_whalo - 1) * col_size + 1) * static_cast<int>(sizeof(MPI_CELL)),
+    //     (1 * col_size + 0) * static_cast<int>(sizeof(MPI_CELL)),
+    //     (1 * col_size + (col_size_whalo - 1)) * static_cast<int>(sizeof(MPI_CELL)),
+    //     (0 * col_size + 0) * static_cast<int>(sizeof(MPI_CELL)),
+    //     (0 * col_size + (col_size_whalo - 1)) * static_cast<int>(sizeof(MPI_CELL)),
+    //     ((row_size_whalo - 1) * col_size + 0) * static_cast<int>(sizeof(MPI_CELL)),
+    //     ((row_size_whalo - 1) * col_size + (col_size_whalo - 1)) * static_cast<int>(sizeof(MPI_CELL)),
+    // };
+
+    int sdispls[src_neighbour_count] = {
+        (1 * col_size + 1),
+        ((row_size_whalo - 2) * col_size + 1),
+        (1 * col_size + 1),
+        (1 * col_size + (col_size_whalo - 2)),
+        (1 * col_size + 1),
+        (1 * col_size + (col_size_whalo - 2)),
+        ((row_size_whalo - 2) * col_size + 1),
+        ((row_size_whalo - 2) * col_size + (col_size_whalo - 2)),
     };
 
-    MPI_Datatype sendtypes[neighbour_count] = {
+    int rdispls[rcv_neighbour_count] = {
+        (0 * col_size + 1),
+        ((row_size_whalo - 1) * col_size + 1),
+        (1 * col_size + 0),
+        (1 * col_size + (col_size_whalo - 1)),
+        (0 * col_size + 0),
+        (0 * col_size + (col_size_whalo - 1)),
+        ((row_size_whalo - 1) * col_size + 0),
+        ((row_size_whalo - 1) * col_size + (col_size_whalo - 1)),
+    };
+
+    MPI_Datatype sendtypes[src_neighbour_count] = {
         MPI_CELL,
         MPI_CELL,
         MPI_COL_PADDING_WHALO,
@@ -166,7 +212,38 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
         MPI_CELL,
     };
 
-    MPI_Alltoallw(&current_gen_whalo.getCell(0, 0), sendcounts, sdispls, sendtypes, &current_gen_whalo.getCell(0, 0), sendcounts, rdispls, sendtypes, dist_graph_comm);
+    MPI_Datatype rcvtypes[rcv_neighbour_count] = {
+        MPI_CELL,
+        MPI_CELL,
+        MPI_COL_PADDING_WHALO,
+        MPI_COL_PADDING_WHALO,
+        MPI_CELL,
+        MPI_CELL,
+        MPI_CELL,
+        MPI_CELL,
+    };
+
+#ifdef DEBUG
+    MPI_Barrier(cart_comm);
+    if (rank == 1)
+    {
+        printf("\n-- BEFORE ALLTOALL--\n");
+        current_gen_whalo.printGeneration("original");
+    }
+    MPI_Barrier(cart_comm);
+#endif
+
+    MPI_Alltoallw(&current_gen_whalo.getCell(0, 0), sendcounts, sdispls, sendtypes, &current_gen_whalo.getCell(0, 0), rcvcounts, rdispls, rcvtypes, dist_graph_comm);
+
+#ifdef DEBUG
+    MPI_Barrier(cart_comm);
+    if (rank == 1)
+    {
+        printf("\n--AFTER ALLTOALL--\n");
+        current_gen_whalo.printGeneration("alltoall");
+    }
+    MPI_Barrier(cart_comm);
+#endif
 
     // Reuse the Generation object current_gen which is already defined and store the next generation in it.
     std::vector<Cell> next_gen_cells(row_size * col_size, Cell('d'));
