@@ -26,6 +26,8 @@ int main(int argc, char **argv)
     float prob_of_life = std::atof(argv[3]);
     int number_of_repetitions = std::atoi(argv[4]);
     std::string weak_scaling_string = argv[5];
+    int proc_x_dim = std::atoi(argv[6]);
+    int proc_y_dim = std::atoi(argv[7]);
     std::istringstream iss(weak_scaling_string);
     bool weak_scaling_flag;
     if (!(iss >> std::boolalpha >> weak_scaling_flag))
@@ -44,7 +46,7 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     assert(0 <= rank && rank < size);
 
-    int dims[ndim] = {0, 0};
+    int dims[ndim] = {proc_x_dim, proc_y_dim};
     MPI_Dims_create(size, 2, dims);
 
     MPI_Comm cart_comm;
@@ -312,7 +314,7 @@ int main(int argc, char **argv)
         MPI_Type_free(&recvGridBlock);
     }
 
-    MPI_Comm_free(&cart_comm);
+    // MPI_Comm_free(&cart_comm);
     MPI_Finalize();
 
     /*
