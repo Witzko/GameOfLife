@@ -42,7 +42,7 @@ for ((i=0; i<${#num_rows[@]}; i++)); do
             else
                 for num_of_processes in "${processes[@]}"; do
                     echo "Running in parallel with num_rows=$N, num_cols=$M, prob_of_life=$prob_of_life, repetitions=$num_of_repetitions, processes=$num_of_processes"
-                    mpirun -np $num_of_processes $executable $N $M $prob_of_life $num_of_repetitions false
+                    mpirun -np $(($num_of_processes*2)) $executable $N $M $prob_of_life $num_of_repetitions true $num_of_processes 2
                 done
             fi
         done

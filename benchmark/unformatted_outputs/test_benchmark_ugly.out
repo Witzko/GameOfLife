@@ -1,0 +1,3 @@
+Running in parallel with num_rows=4, num_cols=4, prob_of_life=0.6, repetitions=10, num_processes=4
+Total alive cells: 0, Total dead cells: 16
+Average time per iteration/repetition: 2.30861e-05, Total time taken (in parallel app the finish time for slowest proc): 0.000232806

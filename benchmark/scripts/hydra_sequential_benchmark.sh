@@ -2,7 +2,7 @@
 
 #SBATCH -p q_student
 #SBATCH -N 1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=4
 #SBATCH --cpu-freq=High
 #SBATCH --time=10:00
 #SBATCH --output=benchmark/unformatted_outputs/sequential_benchmark_ugly.out
