@@ -14,15 +14,15 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    int row_size = std::atoi(argv[1]);
-    int col_size = std::atoi(argv[2]);
+    int num_rows = std::atoi(argv[1]);
+    int num_cols = std::atoi(argv[2]);
     float prob_of_life = std::atof(argv[3]);
     int number_of_repetitions = std::atoi(argv[4]);
 
     /*
         Initialization:
     */
-    Generation current_gen(row_size, col_size, prob_of_life);
+    Generation current_gen(num_rows, num_cols, prob_of_life);
 #ifdef DEBUG
     current_gen.printGeneration("first_gen");
 #endif

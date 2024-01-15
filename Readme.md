@@ -279,7 +279,6 @@ We at most keep two generations, i.e. two MxN sized vectors in the sequential ve
 **Asymptotic Complexity, runtime**
 
 We iterate over two for loops (in the sequential variant) which would be a time complexity of O(n^2). However, we also need to check for each Cell the 8 neighbours, which adds a constant factor of 8 to the  time complexity.
-***!!!!!!!TODO: Need to figure out the complexity on the parallel.!!!!!!!***
 In regards to the runtime: The runtime primarily depends on the size of the matrix.
 
 ### 2.4 Exercise 1
@@ -497,12 +496,7 @@ then done by calling the *areGenerationsEqual(Gen1, Gen2)* function.
 For exercise 3 we had 3 different options to choose from on how to implement the MPI_Collective communication
 to run the game of life using multiple processors.
 
-#### 2.6.1 Options
-
-Here, the main arguments that were used to find the best option was ease of implemention,
-readability, less error-prone (?) as well as having good performance.
-
-***Option 1***
+#### 2.6.1 Option 1
 
 Option 1 was to implement the sending and receiving of the halo elements using non-blocking
 communication. One advantage which can be noted directly by using this approach is that the 
@@ -530,44 +524,7 @@ or successfully sends the right halo before the upper halo.
 
 This approach is straight forward and subsequently, by the argument above, less
 prone to errors, as the manual ordering of communication between the processes
-is not needed. An example of such a "bad" approach can be shown below using the blocking
-MPI_SendRecv.
-
-***Option 2***
-
-Option 2 was to implement the communication using the blocking *MPI_SendRecv()*.
-The MPI_SendRecv can be described as an MPI_Isend and an MPI_Irecv together with a subsequent 
-blocking MPI_Wait. Therefore, it could happen that a deadlock occurs if the order
-of sending/receiving is not done in proper order. Take for example 9 processes
-in a 6x6 grid where each process handles a 2x2 subgrid:
-
-------------------------------------------------------------------------------------------
-    ---------------
-    | 0 0 1 1 2 2 |
-    | 0 0 1 1 2 2 |
-    | 3 3 4 4 5 5 |
-    | 3 3 4 4 5 5 |
-    | 6 6 7 7 8 8 |
-    | 6 6 7 7 8 8 |
-    ---------------
-
-    Process 0-8 calls:
-    MPI_SendRecv(send lower halo, recv lower halo);
-------------------------------------------------------------------------------------------
-
-This will be a deadlock, as process 0 waits on process 3, 3 waits on 6, 6 waits on 0, etc.
-Therefore, additional configuration/overhead would have needed to be done to decide which
-order each process should call MPI_SendRecv to first (as well as the subsequent calls of course).
-
-***Option 3***
-
-The 3rd option was to implement one-sided communication using either MPI_Put/MPI_Get
-or MPI_Win_fence or MPI_Win_start MPI_Win_complete MPI_Win_post MPI_Win_wait
-
-***TODO: EXPLAIN WHY WE DIDN'T CHOOSE THIS***
-
-Considering the discussion above, the most straight forward option to use for this exercise
-was option 1.
+is not needed.
 
 #### 2.6.2 MPI datatypes
 
