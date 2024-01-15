@@ -788,6 +788,10 @@ Also just remove/change anything in the code you feel is necessary.
 
 ## 3. Benchmarking
 
+### 3.1 Sequential
+### 3.2 Parallel
+### 3.3 Parallel with AllToAll collective communication
+
 ## 4. Conclusion and Interpretation of results
 
 ## Literature
