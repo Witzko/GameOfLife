@@ -14,7 +14,7 @@
 # Comment everything below if you just want to run a trivial parallel program for testing:
 make clean
 make debug parallel
-mpirun -n 2 ./build/parallel 4 4 0.5 1 false 2 1
+mpirun -n 2 ./build/parallel 4 4 0.5 1 false 1 2
 
 # Run below with valgrind
 # make clean

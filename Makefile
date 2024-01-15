@@ -1,6 +1,6 @@
 CXX := mpicxx
 # CXX_FLAGS := -Werror -Wall -Wextra -O3 -march=native -std=c++20
-CXX_FLAGS := -Werror -Wall -Wextra -march=native -std=c++20
+CXX_FLAGS := -Werror -Wall -march=native -std=c++20
 
 
 .DEFAULT_GOAL := sequential
