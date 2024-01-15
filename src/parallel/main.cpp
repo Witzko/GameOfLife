@@ -17,12 +17,12 @@ int main(int argc, char **argv)
     */
     if (argc != 8)
     {
-        std::cerr << "Usage: " << argv[0] << " <matrix_size_row> <matrix_size_col> <prob_of_life> <number_of_repetitions> <weak_scaling_flag>\n";
+        std::cerr << "Usage: " << argv[0] << " <matrix_size_row> <matrix_size_col> <prob_of_life> <number_of_repetitions> <weak_scaling_flag> <num_procs_by_col> <num_procs_by_row>\n";
         return 1;
     }
 
-    int row_size = std::atoi(argv[1]);
-    int col_size = std::atoi(argv[2]);
+    int num_rows = std::atoi(argv[1]);
+    int num_cols = std::atoi(argv[2]);
     float prob_of_life = std::atof(argv[3]);
     int number_of_repetitions = std::atoi(argv[4]);
     std::string weak_scaling_string = argv[5];
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     assert(0 <= rank && rank < size);
 
-    int dims[ndim] = {0, 0};
+    int dims[ndim] = {proc_x_dim, proc_y_dim};
     MPI_Dims_create(size, 2, dims);
 
     MPI_Comm cart_comm;
@@ -76,16 +76,16 @@ int main(int argc, char **argv)
     Generation current_gen, next_gen;
 
     /*
-        If weak scaling, then the dimensions provided should be divided by the amount of processors in
+        If strong scaling, then the dimensions provided should be divided by the amount of processors in
         each x-y direction based on the cartesian communicator domain.
     */
     if (!weak_scaling_flag)
     {
-        row_size = row_size / dims[0];
-        col_size = col_size / dims[1];
+        num_rows = num_rows / dims[0];
+        num_cols = num_cols / dims[1];
     }
 
-    current_gen = Generation(row_size, col_size, prob_of_life);
+    current_gen = Generation(num_rows, num_cols, prob_of_life);
 
     double start_time, end_time;
     std::vector<double> times;
@@ -104,10 +104,10 @@ int main(int argc, char **argv)
         Define the MPI vector padding datatype for the MPI communication of the left and right borders (for indexing).
     */
     const int halo_layer_size = 1;                       // 2024-01-03 -> For now only size 1 works anyway.
-    int col_size_whalo = col_size + 2 * halo_layer_size; // As the column is added by one layer on each side
+    int num_cols_whalo = num_cols + 2 * halo_layer_size; // As the column is added by one layer on each side
 
     MPI_Datatype MPI_COL_PADDING_WHALO;
-    MPI_Type_vector(row_size, 1, col_size_whalo, MPI_CELL, &MPI_COL_PADDING_WHALO);
+    MPI_Type_vector(num_rows, 1, num_cols_whalo, MPI_CELL, &MPI_COL_PADDING_WHALO);
     MPI_Type_commit(&MPI_COL_PADDING_WHALO);
 
     /*
@@ -116,10 +116,10 @@ int main(int argc, char **argv)
     std::vector<Cell> global_grid;
     MPI_Datatype recvGridBlock, recvGlobalGridBlock;
 
-    int global_row_size = row_size * dims[0];
-    int global_col_size = col_size * dims[1];
-    int global_sizes_direction[2] = {global_row_size, global_col_size};
-    int local_sizes_direction[2] = {row_size, col_size};
+    int global_num_rows = num_rows * dims[0];
+    int global_num_cols = num_cols * dims[1];
+    int global_sizes_direction[2] = {global_num_rows, global_num_cols};
+    int local_sizes_direction[2] = {num_rows, num_cols};
     int local_start_indexes[2] = {0, 0};
 
     /*
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
     */
     if (rank == 0)
     {
-        global_grid = std::vector<Cell>(global_row_size * global_col_size, Cell('d'));
+        global_grid = std::vector<Cell>(global_num_rows * global_num_cols, Cell('d'));
 
         /*
             Create a datatype of the receive block for all the sub-grids
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
                                  MPI_ORDER_C, MPI_CELL, &recvGridBlock);
 
         /*
-            Resize the recvGridBlock so that when col_size elements have been recevied/placed (1 block) by the master, start
+            Resize the recvGridBlock so that when num_cols elements have been recevied/placed (1 block) by the master, start
             to place the next rank/senders elements into the next block.
 
             For example a 6x6 grid of 9 processors
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
             | G  G | H  H | I  I |
             |--------------------|
         */
-        int block_size = col_size * sizeof(Cell);
+        int block_size = num_cols * sizeof(Cell);
         MPI_Type_create_resized(recvGridBlock, 0, block_size, &recvGlobalGridBlock);
         MPI_Type_commit(&recvGlobalGridBlock);
     }
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
     }
 
     /*
-        col_padding_block contains the padding (num of col_size) of each sub-grid/block in the global grid.
+        col_padding_block contains the padding (num of num_cols) of each sub-grid/block in the global grid.
 
         A 6x6 grid of 9 processes contains the following col_padding_block:
         col_padding_block[9] = {0, 1, 2, 6, 7, 8, 12, 13, 14}
@@ -188,14 +188,14 @@ int main(int argc, char **argv)
     {
         for (int j = 0; j < dims[1]; j++)
         {
-            col_padding_block[k++] = j + i * (row_size * dims[1]);
+            col_padding_block[k++] = j + i * (num_rows * dims[1]);
         }
     }
 
     /*
         Collect the global grid using Gatherv
     */
-    MPI_Gatherv(&current_gen.getCell(0, 0), row_size * col_size, MPI_CELL,
+    MPI_Gatherv(&current_gen.getCell(0, 0), num_rows * num_cols, MPI_CELL,
                 &global_grid[0], num_blocks_per_proc, col_padding_block, recvGlobalGridBlock, 0,
                 cart_comm);
 
@@ -204,7 +204,7 @@ int main(int argc, char **argv)
     if (rank == 0)
     {
         printf("\n--ORIGINAL GLOBAL GRID--\n");
-        printGrid(global_grid, global_row_size, global_col_size);
+        printGrid(global_grid, global_num_rows, global_num_cols);
     }
     MPI_Barrier(cart_comm);
 #endif
@@ -221,8 +221,8 @@ int main(int argc, char **argv)
         /*
             For Peter boi. You can just comment/uncomment for now.
          */
-        // next_gen = calculateNextGenParallel(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
-        next_gen = calculateNextGenParallelWCollNeighbourComm(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
+         next_gen = calculateNextGenParallel(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
+//        next_gen = calculateNextGenParallelWCollNeighbourComm(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
 
         end_time = MPI_Wtime();
         times.push_back(end_time - start_time);
@@ -235,7 +235,7 @@ int main(int argc, char **argv)
             curr_gen_cells = global_grid; // As the global grid contains the global current_gen entries
         }
 
-        MPI_Gatherv(&next_gen.getCell(0, 0), row_size * col_size, MPI_CELL,
+        MPI_Gatherv(&next_gen.getCell(0, 0), num_rows * num_cols, MPI_CELL,
                     &global_grid[0], num_blocks_per_proc, col_padding_block, recvGlobalGridBlock, 0,
                     cart_comm);
         /*
@@ -245,12 +245,12 @@ int main(int argc, char **argv)
         {
             printf("\n--GLOBAL GRID--\n");
             printf("Parallel Iteration: %d\n", i);
-            printGrid(global_grid, global_row_size, global_col_size);
+            printGrid(global_grid, global_num_rows, global_num_cols);
 
             next_gen_cells = global_grid;
 
-            Generation global_next_gen(std::move(next_gen_cells), global_row_size, global_col_size);
-            Generation global_curr_gen(std::move(curr_gen_cells), global_row_size, global_col_size);
+            Generation global_next_gen(std::move(next_gen_cells), global_num_rows, global_num_cols);
+            Generation global_curr_gen(std::move(curr_gen_cells), global_num_rows, global_num_cols);
 
             Generation next_gen_sequential = calculateNextGenSequentially(global_curr_gen);
 
@@ -314,7 +314,7 @@ int main(int argc, char **argv)
         MPI_Type_free(&recvGridBlock);
     }
 
-    // MPI_Comm_free(&cart_comm);
+    MPI_Comm_free(&cart_comm);
     MPI_Finalize();
 
     /*

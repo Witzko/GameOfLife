@@ -1,0 +1,16 @@
+Running sequentially with num_rows=1024, num_cols=1024, prob_of_life=0.4, repetitions=10
+Last generation 
+Alive Cells: 237223 Dead Cells: 811353
+Average calculation time per generation: 0.190515
+Running sequentially with num_rows=1024, num_cols=1024, prob_of_life=0.6, repetitions=10
+Last generation 
+Alive Cells: 124654 Dead Cells: 923922
+Average calculation time per generation: 0.157093
+Running sequentially with num_rows=10240, num_cols=10240, prob_of_life=0.4, repetitions=10
+Last generation 
+Alive Cells: 23854566 Dead Cells: 81003034
+Average calculation time per generation: 19.0267
+Running sequentially with num_rows=10240, num_cols=10240, prob_of_life=0.6, repetitions=10
+Last generation 
+Alive Cells: 12402333 Dead Cells: 92455267
+Average calculation time per generation: 15.6761
