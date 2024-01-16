@@ -120,9 +120,6 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
         lower_right_rank,
     };
 
-    // int source_weights[] = {0};
-    // int rcv_weights[] = {0};
-
     MPI_Dist_graph_create_adjacent(cart_comm, 8, sources, MPI_UNWEIGHTED, 8,
                                    sources, MPI_UNWEIGHTED, MPI_INFO_NULL, false, &dist_graph_comm);
 
@@ -175,28 +172,6 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
         static_cast<int>((&current_gen_whalo.getCell(0, col_size_whalo - 1) - &current_gen_whalo.getCell(0, 0))),
         static_cast<int>((&current_gen_whalo.getCell(0, 0) - &current_gen_whalo.getCell(0, 0))),
     };
-
-    // int sdispls[] = {
-    //     (1 * col_size_whalo + 1) * (int)sizeof(MPI_CELL),
-    //     ((row_size_whalo - 2) * col_size_whalo + 1),
-    //     (1 * col_size_whalo + 1),
-    //     (2 * col_size_whalo - 1),
-    //     (1 * col_size + 1),
-    //     (1 * col_size + (col_size_whalo - 2)),
-    //     ((row_size_whalo - 2) * col_size + 1),
-    //     ((row_size_whalo - 2) * col_size + (col_size_whalo - 2)),
-    // };
-
-    // int rdispls[] = {
-    //     (row_size_whalo * (col_size_whalo - 1) + 1) * (int)sizeof(MPI_CELL),
-    //     (0 * col_size_whalo + 1),
-    //     (2 * col_size_whalo + 0),
-    //     (1 * col_size_whalo + 1),
-    //     (0 * col_size + 0),
-    //     (0 * col_size + (col_size_whalo - 1)),
-    //     ((row_size_whalo - 1) * col_size + 0),
-    //     ((row_size_whalo - 1) * col_size + (col_size_whalo - 1)),
-    // };
 
     MPI_Datatype sendtypes[] = {
         MPI_CELL,
