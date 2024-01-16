@@ -772,19 +772,61 @@ the halo.
 
 ### 2.7 Exercise 4
 
-FOR PETER BOIIII
+In the final exercise, we want to look at a different approach of communication by using the neighborhood collective. For this we implementated a second function called *calculateNextGenParallelWCollNeighbourComm*. In this section we will only touch on the communication part of this method, as the rest is equivalent to the *calculateNextGenParallel* from section 2.6.
 
-Implement the *calculateNextGenParallelWCollNeighbourComm* in functions.cpp.
-To call the function just comment/uncomment the other call to *calculateNextGenParallel*
-in the loop of src/parallel/main.cpp file.
+***1. A New Communicator***
 
-To run the ./run.sh bash file:
-* ./run.sh sequential
-* ./run.sh parallel
+To use Neighborhood methods in MPI we require a distributed Graph communicator. We can specify the edges of the graph by getting the neighboring ranks in the cartesian communicator.
 
-And some additional/simple execution types can be run using the
-run_parallel_fortestGBD.sh by just commenting/uncommenting (described in the bash file).
-Also just remove/change anything in the code you feel is necessary.
+------------------------------------------------------------------------------------------
+    MPI_Comm dist_graph_comm;
+
+    int sources[] = {
+        upper_rank,
+        lower_rank,
+        left_rank,
+        right_rank,
+        upper_left_rank,
+        upper_right_rank,
+        lower_left_rank,
+        lower_right_rank,
+    };
+
+    MPI_Dist_graph_create_adjacent(cart_comm, 8, sources, MPI_UNWEIGHTED, 8,
+                                   sources, MPI_UNWEIGHTED, MPI_INFO_NULL, false, &dist_graph_comm);
+------------------------------------------------------------------------------------------
+
+The ordering of the sources starts from the vertical axis i.e. upper to lower and then horizontal i.e. left to right.
+
+***2. The Neighborhood Strikes Back***
+
+For the Neighborhood communication we used *MPI_Neighbor_alltoallw* method. This requires us to provide displacements for the buffer instead of seperate buffers as in section 2.6.
+
+------------------------------------------------------------------------------------------
+    Cell *buffer_start = &current_gen_whalo.getCell(0, 0);
+    const MPI_Aint send_displs[] = {
+        &current_gen_whalo.getCell(1, 1) - buffer_start,
+        &current_gen_whalo.getCell(row_size_whalo - 2, 1) - buffer_start,
+        &current_gen_whalo.getCell(1, 1) - buffer_start,
+        &current_gen_whalo.getCell(1, col_size_whalo - 2) - buffer_start,
+        &current_gen_whalo.getCell(1, 1) - buffer_start,
+        &current_gen_whalo.getCell(1, col_size_whalo - 2) - buffer_start,
+        &current_gen_whalo.getCell(row_size_whalo - 2, 1) - buffer_start,
+        &current_gen_whalo.getCell(row_size_whalo - 2, col_size_whalo - 2) - buffer_start,
+    };
+------------------------------------------------------------------------------------------
+
+The only difficulty in the implementation was to assign the correct receive buffer to the corresponding process, since we cannot use tags in this communication method. 
+
+------------------------------------------------------------------------------------------
+    MPI_Neighbor_alltoallw(buffer_start, send_counts, send_displs, send_types,
+                           buffer_start, send_counts, recv_displs, send_types, dist_graph_comm);
+------------------------------------------------------------------------------------------
+
+
+***3. Return Of The Generation***
+
+The remaining part of the function is equivalent to everything done in 2.6, so we calculate the new generation and return it.
 
 ## 3. Benchmarking
 
