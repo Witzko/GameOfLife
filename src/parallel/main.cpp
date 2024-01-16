@@ -193,9 +193,9 @@ int main(int argc, char **argv)
     MPI_Barrier(cart_comm);
 #endif
 
-    /*
-        MPI Section:
+    /* #####################
         Start the algorithm
+        ####################
      */
     std::vector<Cell> next_gen_cells, curr_gen_cells;
     MPI_Barrier(cart_comm);
@@ -253,9 +253,6 @@ int main(int argc, char **argv)
     int dead_cells{0};
     countAliveAndDeadCells(current_gen, alive_cells, dead_cells);
 
-    /*
-        Find the total number of alive and dead cells
-    */
     int global_alive_cells, global_dead_cells;
     MPI_Reduce(&alive_cells, &global_alive_cells, 1, MPI_INT, MPI_SUM, 0, cart_comm);
     MPI_Reduce(&dead_cells, &global_dead_cells, 1, MPI_INT, MPI_SUM, 0, cart_comm);
