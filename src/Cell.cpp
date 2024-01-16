@@ -2,7 +2,8 @@
 
 Cell::Cell(char s) : _state(s) {}
 
-void Cell::setState(char s) {
+void Cell::setState(char s)
+{
     this->_state = s;
 }
 

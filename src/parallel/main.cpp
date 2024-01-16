@@ -75,10 +75,6 @@ int main(int argc, char **argv)
     */
     Generation current_gen, next_gen;
 
-    /*
-        If strong scaling, then the dimensions provided should be divided by the amount of processors in
-        each x-y direction based on the cartesian communicator domain.
-    */
     if (!weak_scaling_flag)
     {
         num_rows = num_rows / dims[0];
@@ -91,8 +87,14 @@ int main(int argc, char **argv)
     std::vector<double> times;
 
     /*
-        Define the MPI_CELL datatype which represents the Cell class for the MPI communication.
+        Section: MPI Datatypes - DEFINITION
+
+        - Define the MPI_CELL datatype which represents the Cell class for the MPI communication.
+        - MPI vector padding datatype for the MPI communication of the left and right borders (for indexing)
+        - Create the custom datatype used for the MPI gather of all sub-grids into one global grid.
+        - Create MPI datatype for the master receiving all sub-grids and combining them into the global grid.
     */
+
     MPI_Datatype MPI_CELL;
     MPI_Datatype types[1] = {MPI_CHAR};
     int blocklength[1] = {1};
@@ -100,19 +102,13 @@ int main(int argc, char **argv)
     MPI_Type_create_struct(1, blocklength, displacement, types, &MPI_CELL);
     MPI_Type_commit(&MPI_CELL);
 
-    /*
-        Define the MPI vector padding datatype for the MPI communication of the left and right borders (for indexing).
-    */
-    const int halo_layer_size = 1;                       // 2024-01-03 -> For now only size 1 works anyway.
-    int num_cols_whalo = num_cols + 2 * halo_layer_size; // As the column is added by one layer on each side
+    const int halo_layer_size = 1;
+    int num_cols_whalo = num_cols + 2 * halo_layer_size;
 
     MPI_Datatype MPI_COL_PADDING_WHALO;
     MPI_Type_vector(num_rows, 1, num_cols_whalo, MPI_CELL, &MPI_COL_PADDING_WHALO);
     MPI_Type_commit(&MPI_COL_PADDING_WHALO);
 
-    /*
-        Create the custom datatype used for the MPI gather of all sub-grids into one global grid.
-    */
     std::vector<Cell> global_grid;
     MPI_Datatype recvGridBlock, recvGlobalGridBlock;
 
@@ -122,16 +118,10 @@ int main(int argc, char **argv)
     int local_sizes_direction[2] = {num_rows, num_cols};
     int local_start_indexes[2] = {0, 0};
 
-    /*
-        Create MPI datatype for the master receiving all sub-grids and combining them into the global grid.
-    */
     if (rank == 0)
     {
         global_grid = std::vector<Cell>(global_num_rows * global_num_cols, Cell('d'));
 
-        /*
-            Create a datatype of the receive block for all the sub-grids
-        */
         MPI_Type_create_subarray(ndim, global_sizes_direction, local_sizes_direction, local_start_indexes,
                                  MPI_ORDER_C, MPI_CELL, &recvGridBlock);
 
@@ -157,9 +147,6 @@ int main(int argc, char **argv)
         MPI_Type_commit(&recvGlobalGridBlock);
     }
 
-    /*
-        Each process handles one single block.
-    */
     int num_blocks_per_proc[size];
     for (int i = 0; i < size; i++)
     {
@@ -192,9 +179,6 @@ int main(int argc, char **argv)
         }
     }
 
-    /*
-        Collect the global grid using Gatherv
-    */
     MPI_Gatherv(&current_gen.getCell(0, 0), num_rows * num_cols, MPI_CELL,
                 &global_grid[0], num_blocks_per_proc, col_padding_block, recvGlobalGridBlock, 0,
                 cart_comm);
@@ -210,6 +194,7 @@ int main(int argc, char **argv)
 #endif
 
     /*
+        MPI Section:
         Start the algorithm
      */
     std::vector<Cell> next_gen_cells, curr_gen_cells;
@@ -218,11 +203,8 @@ int main(int argc, char **argv)
     {
         start_time = MPI_Wtime();
 
-        /*
-            For Peter boi. You can just comment/uncomment for now.
-         */
         next_gen = calculateNextGenParallel(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
-        //        next_gen = calculateNextGenParallelWCollNeighbourComm(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
+        // next_gen = calculateNextGenParallelWCollNeighbourComm(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
 
         end_time = MPI_Wtime();
         times.push_back(end_time - start_time);
@@ -232,15 +214,13 @@ int main(int argc, char **argv)
 
         if (rank == 0)
         {
-            curr_gen_cells = global_grid; // As the global grid contains the global current_gen entries
+            curr_gen_cells = global_grid;
         }
 
         MPI_Gatherv(&next_gen.getCell(0, 0), num_rows * num_cols, MPI_CELL,
                     &global_grid[0], num_blocks_per_proc, col_padding_block, recvGlobalGridBlock, 0,
                     cart_comm);
-        /*
-            Print global grid and compare it with sequential version
-         */
+
         if (rank == 0)
         {
             printf("\n--GLOBAL GRID--\n");

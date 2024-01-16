@@ -12,12 +12,9 @@ This is the HPC Project of Group 16 for the TU Wien couse High Performance Compu
 In Part I, you find all the information specifying our implementations (what they can do and what they cannot do,
 what the input parameters are), how to run your codes, and stating what you think works (and what not).
 
-In Part II, you find all the information specifying our implementations (what they can do and what they cannot do,
-what the input parameters are), how to run your codes, and stating what you think works (and what not).
+In Part II, you find all the information specifying our implementations: design decisions, data structures, a detailed view on the implementation of the exercises etc. Also, at the very end we present our **benchmarking** results and discuss them briefly.
 
-
-
-# PART I: Short report: How to run, what it can (not) do
+# PART I Short report: How to run, what it can (not) do
 
 ## 1. Project Structure
 
@@ -28,13 +25,15 @@ The project folders are:
     - /build: .o files, .exe files
     - /debug: .csv debug files
     - /pics: .png elements for documentation use
-    - /data: .odp file for documentation use
+    - /plotting: benchmark plotting python scripts etc
+    - /benchmark: benchmark raw result data etc
+    - /data: .odp file for documentation use, other files used during implementation
 
 Also in the root folder, we have:
 
     - Makefile
     - run.sh
-    - Readme.md
+    - Readme.pdf
 
 ## 2. How to build and run it
 
@@ -52,12 +51,21 @@ The project can be build with the use of a Makefile, both in the optimized versi
 
 The object files and executables are then located in the /build folder.
 
-To run the program, we included a shell file **run.sh** for automation. The executable can also be called with the following commands and CL arguments:
+To run the program, we included a shell file **run.sh** for automation. The executable can also be called with the following commands and CL arguments for the sequential version:
 
 ----------------------------------------------------------------------------------------------------------------------
     mpirun -n 1 ./build/sequential <matrix_size_row> <matrix_size_col> <prob_of_life> <number_of_repetitions>
-    mpirun -n <num_of_processes> ./build/parallel <matrix_size_row> <matrix_size_col> <prob_of_life> <number_of_repetitions> <weak_scaling_flag>
+
 ----------------------------------------------------------------------------------------------------------------------
+
+
+And the following arguments for the parallel version:
+
+----------------------------------------------------------------------------------------------------------------------
+
+    mpirun -n <num_of_processes> ./build/parallel <matrix_size_row> <matrix_size_col> <prob_of_life> <number_of_repetitions> <weak_scaling_flag> <num_procs_by_col> <num_procs_by_row>
+----------------------------------------------------------------------------------------------------------------------
+
 
 with the command line arguments:
 
@@ -65,9 +73,15 @@ with the command line arguments:
     - matrix_size_col: int
     - prob_of_life: float in range [0, 1.0]
     - number_of_repetitions: int
-    - weak_scaling_flag: true | false 
+    - weak_scaling_flag: true | false
+    - num_procs_by_col: int
+    - num_procs_by_row: int
 
-e.g.: mpirun -n 4 ./build/parallel 16 16 0.6 100 false
+e.g. parallel execution: *mpirun -n 16 ./build/parallel 16 16 0.6 100 false 4 4*
+
+This runs the program with 16 processes in a 4x4 grid for a matrix size of 16x16 with probability of life of 60%, 100 iterations and weak-scaling off.
+
+**Note**: We did not include a command line argument to decide if we run it with collective communication or with P2P. The resepective function must be commented/uncommented in line 218 in /src/parallel/main.cpp.
 
 ## 3. What works (and what not)
 
@@ -85,7 +99,7 @@ for each process is how we expect it to be, which always was the case.
 
 We were fortunately able to solve all problems, and therefore there is nothing to write here.
 
-# Part II Long report: Implementation
+# Part II Long report: Implementation and Benchmarking
 
 In the following, we discuss general ideas on how to implement the project, discuss the exercises in detail, talk about the benchmark and finally, interpret the results.
 
@@ -791,6 +805,8 @@ Also just remove/change anything in the code you feel is necessary.
 The benchmarking was divided into 3 steps, following the order that was introduced
 in the assignment. All benchmarks were ran with the alive/death probability of 0.4.
 
+Raw benchmarking data can be found in /benchmarking folder.
+
 ### 3.1 Sequential
 
  **Grid sizes** | 1024x1024 | 10240x10240 |
@@ -799,7 +815,7 @@ in the assignment. All benchmarks were ran with the alive/death probability of 0
 
 ### 3.2 Parallel
 
-The benchmarking of the normal parallel application was divided into two subcategories, one using the strong
+The benchmarking of the P2P parallel application was divided into two subcategories, one using the strong
 scaling and the other using the weak scaling.
 
 #### 3.2.1 Strong scaling
@@ -845,7 +861,7 @@ Based on the benchmarking section, we can conclude the following things:
 [//]: # (5. The difference between "normal" non-blocking communication and Alltoall neighbor comm.)
 
 1. The speedup of the larger grid size version ($10240^2$) is close to the linear speedup. This shows that the both the implementation as well as
-the 9-stencil grid setup seems to be a structure that is parallelizable in an optimal way.
+the 9-stencil grid setup seems to be a structure that is parallelizable in an optimal way. The code can be optimized for sure, which can result in an almost linear speedup for large matrizes.
 2. The parallel efficiency for the larger grid sizes ($10240^2$) of approximately 80%, which is what the speedup also shows, is
 optimal.
 3. By looking at the speedup and parallel efficiency plots with the different grid sizes of $1024^2$ and $10240^2$,
@@ -862,4 +878,5 @@ larger difference is the speedup when the grid size is $1024^2$.
 ## Literature
 
 [1]: Lectures on Parallel Computing, SS2023, Jesper Larsson Träff
+
 [2]: C++ Das Umfassende Handbuch, Rheinwerk Computing, 2.Auflage 2020
