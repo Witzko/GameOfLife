@@ -6,7 +6,7 @@
 
 Generation::Generation() {}
 
-Generation::Generation(std::vector<Cell>&& generation, int rows, int cols) : _generation(std::move(generation)), _rows(rows), _cols(cols) {}
+Generation::Generation(std::vector<Cell> &&generation, int rows, int cols) : _generation(std::move(generation)), _rows(rows), _cols(cols) {}
 
 const std::vector<Cell> &Generation::getGeneration() const
 {
@@ -18,11 +18,13 @@ std::vector<Cell> &Generation::getGeneration()
     return _generation;
 }
 
-Cell &Generation::getCell(int i, int j) {
+Cell &Generation::getCell(int i, int j)
+{
     return _generation[i * _cols + j];
 }
 
-const Cell &Generation::getCell(int i, int j) const {
+const Cell &Generation::getCell(int i, int j) const
+{
     return _generation[i * _cols + j];
 }
 
@@ -31,7 +33,7 @@ Generation::Generation(int rows, int cols, float prob_of_life)
     this->_rows = rows;
     this->_cols = cols;
 
-    std::vector<Cell> generation(rows*cols, Cell('d'));
+    std::vector<Cell> generation(rows * cols, Cell('d'));
     this->_generation = generation;
 
     std::random_device rd;
@@ -44,19 +46,18 @@ Generation::Generation(int rows, int cols, float prob_of_life)
         {
             if (uniform_zero_to_one(gen) < prob_of_life)
             {
-                this->getCell(i,j).setStateToAlive();
+                this->getCell(i, j).setStateToAlive();
             }
         }
     }
 }
 
-void Generation::setGenerationAndProperties(std::vector<Cell>&& generation, int rows, int cols)
+void Generation::setGenerationAndProperties(std::vector<Cell> &&generation, int rows, int cols)
 {
     this->_generation = std::move(generation);
     this->_rows = rows;
     this->_cols = cols;
 }
-
 
 int Generation::getRowSize() const
 {
@@ -74,14 +75,14 @@ int Generation::countAliveNeighbours(const int &left_col_idx, const int &right_c
     int alive_neighbours_count = 0;
 
     // anit-clockwise from bottom left
-    this->getCell(lower_row_idx,left_col_idx).isAlive() && alive_neighbours_count++;
-    this->getCell(lower_row_idx,col_idx).isAlive() && alive_neighbours_count++;
-    this->getCell(lower_row_idx,right_col_idx).isAlive() && alive_neighbours_count++;
-    this->getCell(row_idx,right_col_idx).isAlive() && alive_neighbours_count++;
-    this->getCell(upper_row_idx,right_col_idx).isAlive() && alive_neighbours_count++;
-    this->getCell(upper_row_idx,col_idx).isAlive() && alive_neighbours_count++;
-    this->getCell(upper_row_idx,left_col_idx).isAlive() && alive_neighbours_count++;
-    this->getCell(row_idx,left_col_idx).isAlive() && alive_neighbours_count++;
+    this->getCell(lower_row_idx, left_col_idx).isAlive() && alive_neighbours_count++;
+    this->getCell(lower_row_idx, col_idx).isAlive() && alive_neighbours_count++;
+    this->getCell(lower_row_idx, right_col_idx).isAlive() && alive_neighbours_count++;
+    this->getCell(row_idx, right_col_idx).isAlive() && alive_neighbours_count++;
+    this->getCell(upper_row_idx, right_col_idx).isAlive() && alive_neighbours_count++;
+    this->getCell(upper_row_idx, col_idx).isAlive() && alive_neighbours_count++;
+    this->getCell(upper_row_idx, left_col_idx).isAlive() && alive_neighbours_count++;
+    this->getCell(row_idx, left_col_idx).isAlive() && alive_neighbours_count++;
 
     return alive_neighbours_count;
 }
@@ -102,7 +103,7 @@ void Generation::printGeneration(const std::string &filename)
     {
         for (int j = 0; j < _cols; j++)
         {
-            if (this->getCell(i,j).isAlive())
+            if (this->getCell(i, j).isAlive())
             {
                 file << "1 ";
             }

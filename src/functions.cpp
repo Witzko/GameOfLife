@@ -36,20 +36,6 @@ Generation calculateNextGenSequentially(const Generation &current_gen)
     return next_gen;
 }
 
-void printGrid(std::vector<Cell> &vector, int rows, int columns)
-{
-    int i, j;
-    for (i = 0; i < rows; i++)
-    {
-        for (j = 0; j < columns; j++)
-        {
-            printf("%c ", vector[i * columns + j].getState());
-        }
-        printf("\n");
-    }
-    fflush(stdout);
-}
-
 Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, MPI_Comm &cart_comm, MPI_Datatype &MPI_CELL, MPI_Datatype &MPI_COL_PADDING_WHALO, int halo_layer_size)
 {
     int row_size = current_gen.getRowSize();
@@ -226,7 +212,6 @@ Generation calculateNextGenParallel(Generation &&current_gen, MPI_Comm &cart_com
         | halo curr_gen halo |
         | halo   halo   halo |
      */
-
     std::vector<Cell> current_gen_cells_whalo(row_size_whalo * col_size_whalo, Cell('d'));
 
     for (int i = 0; i < row_size; i++)
@@ -358,4 +343,18 @@ double averageVectorElements(const std::vector<double> &_vector)
 {
     auto const _size = static_cast<double>(_vector.size());
     return std::reduce(_vector.begin(), _vector.end()) / _size;
+}
+
+void printGrid(std::vector<Cell> &vector, int rows, int columns)
+{
+    int i, j;
+    for (i = 0; i < rows; i++)
+    {
+        for (j = 0; j < columns; j++)
+        {
+            printf("%c ", vector[i * columns + j].getState());
+        }
+        printf("\n");
+    }
+    fflush(stdout);
 }
