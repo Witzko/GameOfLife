@@ -833,15 +833,31 @@ scaling and the other using the weak scaling.
 ## 4. Conclusion and Interpretation of results
 
 Based on the benchmarking section, we can conclude the following things:
-1. Larger gridsizes = more stable results (and efficient in the sense)
-2. Weak scaling runtimes are equal, as we have the necessary computational power
-to utilize the grid sizes provided.
-3. The difference between "normal" non-blocking communication and Alltoall neighbor comm.
 
-1. By looking at the speedup and parallel efficiency plots with the different grid sizes of $1024^2$ and $10240^2$,
+[//]: # (1. Close to linear speedup of 10240 grid sizes.)
+
+[//]: # (2. Parallel efficiency of approximately ~80% in 10240 grid sizes, very good)
+
+[//]: # (3. Larger gridsizes = more stable results &#40;and efficient in the sense&#41;)
+
+[//]: # (4. Weak scaling runtimes are equal, as we have the necessary computational power to utilize the grid sizes provided.)
+
+[//]: # (5. The difference between "normal" non-blocking communication and Alltoall neighbor comm.)
+
+1. The speedup of the larger grid size version ($10240^2$) is close to the linear speedup. This shows that the both the implementation as well as
+the 9-stencil grid setup seems to be a structure that is parallelizable in an optimal way.
+2. The parallel efficiency for the larger grid sizes ($10240^2$) of approximately 80%, which is what the speedup also shows, is
+optimal.
+3. By looking at the speedup and parallel efficiency plots with the different grid sizes of $1024^2$ and $10240^2$,
 it can be seen that when the grid size is larger, the more the application follows the most optimal performance that you can get from the hardware.
-
-
+This means that the performance gets influenced by the parallel overhead for smaller grids in comparison to when the grid sizes are
+larger.
+4. Looking at the plots for the weak scaling runtimes, it can be seen that the runtimes stays approximately the same even when increasing the amount of processes.
+This has its explanation by the fact that the each process handles a grid of size $1024^2$ independently
+of how many other processes are ran concurrently.
+5. Observing the difference in runtimes, speedup and parallel efficiency of both the non-blocking communication
+and the Alltoall neighbor collective communication, it can be seen that they differ by a very small margin. The only
+larger difference is the speedup when the grid size is $1024^2$.
 
 ## Literature
 
