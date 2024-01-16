@@ -108,21 +108,8 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
 
     // Convert to Distributed Graph Comm
     MPI_Comm dist_graph_comm;
-    int src_neighbour_count = 8;
-    int rcv_neighbour_count = 8;
 
     int sources[] = {
-        upper_rank,
-        lower_rank,
-        left_rank,
-        right_rank,
-        upper_left_rank,
-        upper_right_rank,
-        lower_left_rank,
-        lower_right_rank,
-    };
-
-    int receives[] = {
         upper_rank,
         lower_rank,
         left_rank,
@@ -136,9 +123,10 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
     // int source_weights[] = {0};
     // int rcv_weights[] = {0};
 
-    MPI_Dist_graph_create_adjacent(cart_comm, src_neighbour_count, sources, MPI_UNWEIGHTED, rcv_neighbour_count,
-                                   receives, MPI_UNWEIGHTED, MPI_INFO_NULL, false, &dist_graph_comm);
+    MPI_Dist_graph_create_adjacent(cart_comm, 8, sources, MPI_UNWEIGHTED, 8,
+                                   sources, MPI_UNWEIGHTED, MPI_INFO_NULL, false, &dist_graph_comm);
 
+#ifdef DEBUG
     int test_sources[8];
     int test_destinations[8];
     int test_src_weights[8];
@@ -146,7 +134,6 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
 
     MPI_Dist_graph_neighbors(dist_graph_comm, 8, test_sources, test_src_weights, 8, test_destinations, test_dest_weights);
 
-#ifdef DEBUG
     MPI_Barrier(cart_comm);
     if (rank == 0)
     {
@@ -167,14 +154,14 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
                         1,
                         1};
 
-    int rcvcounts[] = {col_size,
-                       col_size,
-                       1,
-                       1,
-                       1,
-                       1,
-                       1,
-                       1};
+    [[maybe_unused]] int rcvcounts[] = {col_size,
+                                        col_size,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1};
 
     int sdispls[] = {
         static_cast<int>((&current_gen_whalo.getCell(1, 1) - &current_gen_whalo.getCell(0, 0))),
@@ -231,7 +218,7 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
         MPI_CELL,
     };
 
-    MPI_Datatype rcvtypes[] = {
+    [[maybe_unused]] MPI_Datatype rcvtypes[] = {
         MPI_CELL,
         MPI_CELL,
         MPI_COL_PADDING_WHALO,
@@ -264,7 +251,7 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
     MPI_Barrier(cart_comm);
 #endif
 
-    MPI_Alltoallw(&current_gen_whalo.getCell(0, 0), sendcounts, sdispls, sendtypes, &current_gen_whalo.getCell(0, 0), rcvcounts, rdispls, rcvtypes, dist_graph_comm);
+    MPI_Alltoallw(&current_gen_whalo.getCell(0, 0), sendcounts, sdispls, sendtypes, &current_gen_whalo.getCell(0, 0), sendcounts, rdispls, sendtypes, dist_graph_comm);
 
 #ifdef DEBUG
     MPI_Barrier(cart_comm);
