@@ -154,7 +154,7 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
                         1,
                         1};
 
-    int sdispls[] = {
+    const MPI_Aint sdispls[] = {
         static_cast<int>((&current_gen_whalo.getCell(1, 1) - &current_gen_whalo.getCell(0, 0))),
         static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 2, 1) - &current_gen_whalo.getCell(0, 0))),
         static_cast<int>((&current_gen_whalo.getCell(1, 1) - &current_gen_whalo.getCell(0, 0))),
@@ -165,15 +165,15 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
         static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 2, col_size_whalo - 2) - &current_gen_whalo.getCell(0, 0))),
     };
 
-    int rdispls[] = {
-        static_cast<int>((&current_gen_whalo.getCell(0, 1) - &current_gen_whalo.getCell(0, 0))),
+    const MPI_Aint rdispls[] = {
         static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 1, 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(1, 0) - &current_gen_whalo.getCell(0, 0))),
+        static_cast<int>((&current_gen_whalo.getCell(0, 1) - &current_gen_whalo.getCell(0, 0))),
         static_cast<int>((&current_gen_whalo.getCell(1, col_size_whalo - 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(0, 0) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(0, col_size_whalo - 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 1, 0) - &current_gen_whalo.getCell(0, 0))),
+        static_cast<int>((&current_gen_whalo.getCell(1, 0) - &current_gen_whalo.getCell(0, 0))),
         static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 1, col_size_whalo - 1) - &current_gen_whalo.getCell(0, 0))),
+        static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 1, 0) - &current_gen_whalo.getCell(0, 0))),
+        static_cast<int>((&current_gen_whalo.getCell(0, col_size_whalo - 1) - &current_gen_whalo.getCell(0, 0))),
+        static_cast<int>((&current_gen_whalo.getCell(0, 0) - &current_gen_whalo.getCell(0, 0))),
     };
 
     // int sdispls[] = {
@@ -213,36 +213,48 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
     MPI_Barrier(cart_comm);
     if (rank == 0)
     {
-        printf("Rank 0 printed original\n");
         current_gen_whalo.printGeneration("original_0");
+    }
+    if (rank == 1)
+    {
+        current_gen_whalo.printGeneration("original_1");
         for (size_t i = 0; i < 8; i++)
         {
-            std::cout << sdispls[i] << "\n";
+            std::cout << sources[i] << "\n";
         }
     }
-    else
+
+    if (rank == 2)
     {
-        printf("Rank 1 printed original\n");
-        current_gen_whalo.printGeneration("original_1");
+        current_gen_whalo.printGeneration("original_2");
+    }
+    if (rank == 3)
+    {
+        current_gen_whalo.printGeneration("original_3");
     }
 
     MPI_Barrier(cart_comm);
 #endif
 
-    MPI_Alltoallw(&current_gen_whalo.getCell(0, 0), sendcounts, sdispls, sendtypes, &current_gen_whalo.getCell(0, 0), sendcounts, rdispls, sendtypes, dist_graph_comm);
-    MPI_Alltoallw(&current_gen_whalo.getCell(0, 0), sendcounts, sdispls, sendtypes, &current_gen_whalo.getCell(0, 0), sendcounts, rdispls, sendtypes, dist_graph_comm);
+    MPI_Neighbor_alltoallw(&current_gen_whalo.getCell(0, 0), sendcounts, sdispls, sendtypes, &current_gen_whalo.getCell(0, 0), sendcounts, rdispls, sendtypes, dist_graph_comm);
 
 #ifdef DEBUG
     MPI_Barrier(cart_comm);
     if (rank == 0)
     {
-        printf("Rank 0 printed after\n");
         current_gen_whalo.printGeneration("alltoall_0");
     }
-    else
+    if (rank == 1)
     {
-        printf("Rank 1 printed after\n");
         current_gen_whalo.printGeneration("alltoall_1");
+    }
+    if (rank == 2)
+    {
+        current_gen_whalo.printGeneration("alltoall_2");
+    }
+    if (rank == 3)
+    {
+        current_gen_whalo.printGeneration("alltoall_3");
     }
     MPI_Barrier(cart_comm);
 #endif
