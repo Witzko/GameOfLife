@@ -230,6 +230,7 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
 #endif
 
     MPI_Alltoallw(&current_gen_whalo.getCell(0, 0), sendcounts, sdispls, sendtypes, &current_gen_whalo.getCell(0, 0), sendcounts, rdispls, sendtypes, dist_graph_comm);
+    MPI_Alltoallw(&current_gen_whalo.getCell(0, 0), sendcounts, sdispls, sendtypes, &current_gen_whalo.getCell(0, 0), sendcounts, rdispls, sendtypes, dist_graph_comm);
 
 #ifdef DEBUG
     MPI_Barrier(cart_comm);
