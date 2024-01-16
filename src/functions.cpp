@@ -123,57 +123,41 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
     MPI_Dist_graph_create_adjacent(cart_comm, 8, sources, MPI_UNWEIGHTED, 8,
                                    sources, MPI_UNWEIGHTED, MPI_INFO_NULL, false, &dist_graph_comm);
 
-#ifdef DEBUG
-    int test_sources[8];
-    int test_destinations[8];
-    int test_src_weights[8];
-    int test_dest_weights[8];
+    // Alltoallw communication
+    int send_counts[] = {col_size,
+                         col_size,
+                         1,
+                         1,
+                         1,
+                         1,
+                         1,
+                         1};
 
-    MPI_Dist_graph_neighbors(dist_graph_comm, 8, test_sources, test_src_weights, 8, test_destinations, test_dest_weights);
+    Cell *buffer_start = &current_gen_whalo.getCell(0, 0);
 
-    MPI_Barrier(cart_comm);
-    if (rank == 0)
-    {
-        std::cout << "col_size " << col_size << "\n";
-        std::cout << "row_size " << row_size << "\n";
-        std::cout << "col_size_whalo " << col_size_whalo << "\n";
-        std::cout << "row_size_whalo " << row_size_whalo << "\n";
-    }
-    MPI_Barrier(cart_comm);
-#endif
-
-    int sendcounts[] = {col_size,
-                        col_size,
-                        1,
-                        1,
-                        1,
-                        1,
-                        1,
-                        1};
-
-    const MPI_Aint sdispls[] = {
-        static_cast<int>((&current_gen_whalo.getCell(1, 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 2, 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(1, 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(1, col_size_whalo - 2) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(1, 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(1, col_size_whalo - 2) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 2, 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 2, col_size_whalo - 2) - &current_gen_whalo.getCell(0, 0))),
+    const MPI_Aint send_displs[] = {
+        &current_gen_whalo.getCell(1, 1) - buffer_start,
+        &current_gen_whalo.getCell(row_size_whalo - 2, 1) - buffer_start,
+        &current_gen_whalo.getCell(1, 1) - buffer_start,
+        &current_gen_whalo.getCell(1, col_size_whalo - 2) - buffer_start,
+        &current_gen_whalo.getCell(1, 1) - buffer_start,
+        &current_gen_whalo.getCell(1, col_size_whalo - 2) - buffer_start,
+        &current_gen_whalo.getCell(row_size_whalo - 2, 1) - buffer_start,
+        &current_gen_whalo.getCell(row_size_whalo - 2, col_size_whalo - 2) - buffer_start,
     };
 
-    const MPI_Aint rdispls[] = {
-        static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 1, 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(0, 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(1, col_size_whalo - 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(1, 0) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 1, col_size_whalo - 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(row_size_whalo - 1, 0) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(0, col_size_whalo - 1) - &current_gen_whalo.getCell(0, 0))),
-        static_cast<int>((&current_gen_whalo.getCell(0, 0) - &current_gen_whalo.getCell(0, 0))),
+    const MPI_Aint recv_displs[] = {
+        &current_gen_whalo.getCell(row_size_whalo - 1, 1) - buffer_start,
+        &current_gen_whalo.getCell(0, 1) - buffer_start,
+        &current_gen_whalo.getCell(1, col_size_whalo - 1) - buffer_start,
+        &current_gen_whalo.getCell(1, 0) - buffer_start,
+        &current_gen_whalo.getCell(row_size_whalo - 1, col_size_whalo - 1) - buffer_start,
+        &current_gen_whalo.getCell(row_size_whalo - 1, 0) - buffer_start,
+        &current_gen_whalo.getCell(0, col_size_whalo - 1) - buffer_start,
+        0,
     };
 
-    MPI_Datatype sendtypes[] = {
+    MPI_Datatype send_types[] = {
         MPI_CELL,
         MPI_CELL,
         MPI_COL_PADDING_WHALO,
@@ -184,55 +168,8 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
         MPI_CELL,
     };
 
-#ifdef DEBUG
-    MPI_Barrier(cart_comm);
-    if (rank == 0)
-    {
-        current_gen_whalo.printGeneration("original_0");
-    }
-    if (rank == 1)
-    {
-        current_gen_whalo.printGeneration("original_1");
-        for (size_t i = 0; i < 8; i++)
-        {
-            std::cout << sources[i] << "\n";
-        }
-    }
-
-    if (rank == 2)
-    {
-        current_gen_whalo.printGeneration("original_2");
-    }
-    if (rank == 3)
-    {
-        current_gen_whalo.printGeneration("original_3");
-    }
-
-    MPI_Barrier(cart_comm);
-#endif
-
-    MPI_Neighbor_alltoallw(&current_gen_whalo.getCell(0, 0), sendcounts, sdispls, sendtypes, &current_gen_whalo.getCell(0, 0), sendcounts, rdispls, sendtypes, dist_graph_comm);
-
-#ifdef DEBUG
-    MPI_Barrier(cart_comm);
-    if (rank == 0)
-    {
-        current_gen_whalo.printGeneration("alltoall_0");
-    }
-    if (rank == 1)
-    {
-        current_gen_whalo.printGeneration("alltoall_1");
-    }
-    if (rank == 2)
-    {
-        current_gen_whalo.printGeneration("alltoall_2");
-    }
-    if (rank == 3)
-    {
-        current_gen_whalo.printGeneration("alltoall_3");
-    }
-    MPI_Barrier(cart_comm);
-#endif
+    MPI_Neighbor_alltoallw(buffer_start, send_counts, send_displs, send_types,
+                           buffer_start, send_counts, recv_displs, send_types, dist_graph_comm);
 
     // Reuse the Generation object current_gen which is already defined and store the next generation in it.
     std::vector<Cell> next_gen_cells(row_size * col_size, Cell('d'));
@@ -265,8 +202,7 @@ Generation calculateNextGenParallelWCollNeighbourComm(Generation &&current_gen, 
     return current_gen;
 }
 
-Generation calculateNextGenParallel(Generation &&current_gen, MPI_Comm &cart_comm,
-                                    MPI_Datatype &MPI_CELL, MPI_Datatype &MPI_COL_PADDING_WHALO, int halo_layer_size)
+Generation calculateNextGenParallel(Generation &&current_gen, MPI_Comm &cart_comm, MPI_Datatype &MPI_CELL, MPI_Datatype &MPI_COL_PADDING_WHALO, int halo_layer_size)
 {
     int row_size = current_gen.getRowSize();
     int col_size = current_gen.getColSize();
@@ -416,24 +352,6 @@ bool areGenerationsEqual(const Generation &gen_one, const Generation &gen_two)
     }
 
     return true;
-}
-
-/**
-    I'm to lazy to fix it because it's not really used atm. Plez fix if needed.
-    // Adam
-*/
-std::vector<std::vector<Cell>> getSubMatrix(const std::vector<std::vector<Cell>> &matrix, int start_row, int start_col, int num_rows, int num_cols)
-{
-    std::vector<std::vector<Cell>> sub_matrix_cells;
-
-    for (int i = start_row; i < start_row + num_rows; i++)
-    {
-        std::vector<Cell>::const_iterator first_row_entry = matrix[i].begin() + start_col;
-        std::vector<Cell>::const_iterator last_row_entry = matrix[i].begin() + (start_col + num_cols);
-        sub_matrix_cells.push_back(std::vector<Cell>(first_row_entry, last_row_entry));
-    }
-
-    return sub_matrix_cells;
 }
 
 double averageVectorElements(const std::vector<double> &_vector)
