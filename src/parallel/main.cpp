@@ -221,8 +221,8 @@ int main(int argc, char **argv)
         /*
             For Peter boi. You can just comment/uncomment for now.
          */
-         next_gen = calculateNextGenParallel(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
-//        next_gen = calculateNextGenParallelWCollNeighbourComm(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
+        next_gen = calculateNextGenParallel(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
+        //        next_gen = calculateNextGenParallelWCollNeighbourComm(std::move(current_gen), cart_comm, MPI_CELL, MPI_COL_PADDING_WHALO, halo_layer_size);
 
         end_time = MPI_Wtime();
         times.push_back(end_time - start_time);
@@ -248,9 +248,6 @@ int main(int argc, char **argv)
             printGrid(global_grid, global_num_rows, global_num_cols);
 
             next_gen_cells = global_grid;
-
-            Generation global_next_gen(std::move(next_gen_cells), global_num_rows, global_num_cols);
-            Generation global_curr_gen(std::move(curr_gen_cells), global_num_rows, global_num_cols);
 
             Generation next_gen_sequential = calculateNextGenSequentially(global_curr_gen);
 
