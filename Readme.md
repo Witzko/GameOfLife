@@ -73,17 +73,17 @@ e.g.: mpirun -n 4 ./build/parallel 16 16 0.6 100 false
 
 ### 3.1 What works
 
-Everything up to Exercise 4 is working fine. We included a variety of debug possibilities to check the results. For instance, when running in DEBUG mode, the grid gets stored
+Everything is working fine. We included a variety of debug possibilities to check the results. For instance, when running in DEBUG mode, the grid gets stored
 at crucial moments inside of the /debug folder in .csv format, which allows for direct comparison between iterations and implementations (sequential vs parallel).
 
 Moreover, we implemented a comparison function areGenerationsEqual(), which checks the equality of the parallel with the sequential version at the very end.
 
-Another aspect is the weak_scaling, which is also showing the expected results. During implementation, we defined DEBUG sections to check wheter the cell distribution in the matrix
+The weak_scaling is also showing the expected results. During implementation, we defined DEBUG sections to check wheter the cell distribution in the matrix
 for each process is how we expect it to be, which always was the case.
 
-### 3.2 What (does not) work
+### 3.2 What does not work
 
-Nothing, we did great.
+We were fortunately able to solve all problems, and therefore there is nothing to write here.
 
 # Part II Long report: Implementation
 
