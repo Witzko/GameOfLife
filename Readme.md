@@ -788,11 +788,40 @@ Also just remove/change anything in the code you feel is necessary.
 
 ## 3. Benchmarking
 
+The benchmarking was divided into 3 steps, following the order that was introduced
+in the assignment. All benchmarks were ran with the alive/death probability of 0.4.
+
 ### 3.1 Sequential
+
+ **Grid sizes** | 1024x1024 | 10240x10240 |
+ ---------------|-----------|-------------|
+ **Seconds**    | 0.190515  | 19.0267     |
+
 ### 3.2 Parallel
+
+The benchmarking of the normal parallel application was divided into two subcategories, one using the strong
+scaling and the other using the weak scaling.
+
+#### 3.2.1 Strong scaling
+
+![runtime_1024.svg](plotting%2Fplots%2Fstrong_scaling%2Fruntime_1024.svg)
+![runtime_10240.svg](./plotting%2Fplots%2Fstrong_scaling%2Fruntime_10240.svg)
+![speedup_1024.svg](plotting%2Fplots%2Fstrong_scaling%2Fspeedup_1024.svg)
+![speedup_10240.svg](plotting%2Fplots%2Fstrong_scaling%2Fspeedup_10240.svg)
+![parallel_efficiency_1024.svg](plotting%2Fplots%2Fstrong_scaling%2Fparallel_efficiency_1024.svg)
+![parallel_efficiency_10240.svg](plotting%2Fplots%2Fstrong_scaling%2Fparallel_efficiency_10240.svg)
+
+#### 3.2.2 Weak scaling
+
+![runtime_1024.svg](plotting%2Fplots%2Fweak_scaling%2Fruntime_1024.svg)
+
 ### 3.3 Parallel with AllToAll collective communication
 
+TBD
+
 ## 4. Conclusion and Interpretation of results
+
+
 
 ## Literature
 
