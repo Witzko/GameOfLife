@@ -4,7 +4,7 @@ import os
 
 pwd = os.path.dirname(os.path.realpath(__file__))
 
-path_to_benchmark_parallel_strongscaling = pwd + "/../benchmark/parallel_benchmark_strongscaling.txt"
+path_to_benchmark_parallel_strongscaling = pwd + "/../benchmark/parallel_benchmark_strongscaling_alltoall.txt"
 path_to_benchmark_sequential = pwd + "/../benchmark/sequential_benchmark.txt"
 
 processes_rows = []
@@ -28,18 +28,18 @@ tot_processes = np.array(processes_cols) * np.array(processes_rows)
 n = ["({},{})".format(val[0], val[1]) for _, val in enumerate(zip(processes_rows, processes_cols))]
 
 # Runtime plot
-plt.title("Strong scaling runtime, gridsize=[{},{}]".format(grid_sizes[0], grid_sizes[1]))
+plt.title("Strong scaling runtime alltoall, gridsize=[{},{}]".format(grid_sizes[0], grid_sizes[1]))
 plt.plot(tot_processes, times_parallel, "-o")
 for i, txt in enumerate(n):
     plt.annotate(txt, (tot_processes[i], times_parallel[i]))
 plt.xlabel("Processes")
 plt.ylabel("Avg time per iteration [seconds]")
-plt.savefig("plots/strong_scaling/runtime_{}.svg".format(grid_sizes[0]))
+plt.savefig("plots/alltoall_strong_scaling/runtime_{}.svg".format(grid_sizes[0]))
 plt.close()
 
 # Speedup plot
 speedup = time_sequential / np.array(times_parallel)
-plt.title("Speedup, gridsize=[{},{}]".format(grid_sizes[0], grid_sizes[1]))
+plt.title("Speedup alltoall, gridsize=[{},{}]".format(grid_sizes[0], grid_sizes[1]))
 plt.plot(tot_processes, speedup, "-o", label="Speedup")
 plt.plot(tot_processes, tot_processes, "-o", label="Linear speedup")
 for i, txt in enumerate(n):
@@ -48,12 +48,12 @@ for i, txt in enumerate(n):
 plt.xlabel("Processes")
 plt.ylabel("Speedup [$T_1 / T_p$]")
 plt.legend()
-plt.savefig("plots/strong_scaling/speedup_{}.svg".format(grid_sizes[0]))
+plt.savefig("plots/alltoall_strong_scaling/speedup_{}.svg".format(grid_sizes[0]))
 plt.close()
 
 # Parallel efficiency plot
 parallel_efficiency = speedup / tot_processes
-plt.title("Parallel efficiency, gridsize=[{},{}]".format(grid_sizes[0], grid_sizes[1]))
+plt.title("Parallel efficiency alltoall, gridsize=[{},{}]".format(grid_sizes[0], grid_sizes[1]))
 plt.plot(tot_processes, parallel_efficiency, "-o", label="Parallel efficency")
 plt.plot(tot_processes, tot_processes / tot_processes, "-o", label="Optimal parallel efficiency")
 for i, txt in enumerate(n):
@@ -62,5 +62,5 @@ for i, txt in enumerate(n):
 plt.xlabel("Processes")
 plt.ylabel("Parallel efficiency [speedup / num_proc]")
 plt.legend()
-plt.savefig("plots/strong_scaling/parallel_efficiency_{}.svg".format(grid_sizes[0]))
+plt.savefig("plots/alltoall_strong_scaling/parallel_efficiency_{}.svg".format(grid_sizes[0]))
 plt.close()

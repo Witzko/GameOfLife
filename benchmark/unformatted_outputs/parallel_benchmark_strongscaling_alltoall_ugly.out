@@ -1,0 +1,48 @@
+Running in parallel with num_rows=1024, num_cols=1024, prob_of_life=0.4, repetitions=10, num_proc_x=32, num_proc_y=1
+Total alive cells: 241608, Total dead cells: 806968
+Average time per iteration/repetition: 0.00742644, Total time taken (in parallel app the finish time for slowest proc): 0.0743232
+Running in parallel with num_rows=1024, num_cols=1024, prob_of_life=0.4, repetitions=10, num_proc_x=32, num_proc_y=8
+Total alive cells: 242032, Total dead cells: 806544
+Average time per iteration/repetition: 0.00148958, Total time taken (in parallel app the finish time for slowest proc): 0.014954
+Running in parallel with num_rows=1024, num_cols=1024, prob_of_life=0.4, repetitions=10, num_proc_x=32, num_proc_y=16
+Total alive cells: 242173, Total dead cells: 806403
+Average time per iteration/repetition: 0.00553095, Total time taken (in parallel app the finish time for slowest proc): 0.0553358
+Running in parallel with num_rows=1024, num_cols=1024, prob_of_life=0.4, repetitions=10, num_proc_x=32, num_proc_y=32
+Total alive cells: 241772, Total dead cells: 806804
+Average time per iteration/repetition: 0.00220004, Total time taken (in parallel app the finish time for slowest proc): 0.0220007
+Running in parallel with num_rows=1024, num_cols=1024, prob_of_life=0.6, repetitions=10, num_proc_x=32, num_proc_y=1
+Total alive cells: 123095, Total dead cells: 925481
+Average time per iteration/repetition: 0.0063229, Total time taken (in parallel app the finish time for slowest proc): 0.0633079
+Running in parallel with num_rows=1024, num_cols=1024, prob_of_life=0.6, repetitions=10, num_proc_x=32, num_proc_y=8
+Total alive cells: 121430, Total dead cells: 927146
+Average time per iteration/repetition: 0.0015621, Total time taken (in parallel app the finish time for slowest proc): 0.015651
+Running in parallel with num_rows=1024, num_cols=1024, prob_of_life=0.6, repetitions=10, num_proc_x=32, num_proc_y=16
+Total alive cells: 123940, Total dead cells: 924636
+Average time per iteration/repetition: 0.00428352, Total time taken (in parallel app the finish time for slowest proc): 0.0428674
+Running in parallel with num_rows=1024, num_cols=1024, prob_of_life=0.6, repetitions=10, num_proc_x=32, num_proc_y=32
+Total alive cells: 123402, Total dead cells: 925174
+Average time per iteration/repetition: 0.00204685, Total time taken (in parallel app the finish time for slowest proc): 0.0204874
+Running in parallel with num_rows=10240, num_cols=10240, prob_of_life=0.4, repetitions=10, num_proc_x=32, num_proc_y=1
+Total alive cells: 23876564, Total dead cells: 80981036
+Average time per iteration/repetition: 0.709532, Total time taken (in parallel app the finish time for slowest proc): 7.09852
+Running in parallel with num_rows=10240, num_cols=10240, prob_of_life=0.4, repetitions=10, num_proc_x=32, num_proc_y=8
+Total alive cells: 23882400, Total dead cells: 80975200
+Average time per iteration/repetition: 0.0905957, Total time taken (in parallel app the finish time for slowest proc): 0.906176
+Running in parallel with num_rows=10240, num_cols=10240, prob_of_life=0.4, repetitions=10, num_proc_x=32, num_proc_y=16
+Total alive cells: 23900408, Total dead cells: 80957192
+Average time per iteration/repetition: 0.0475787, Total time taken (in parallel app the finish time for slowest proc): 0.477429
+Running in parallel with num_rows=10240, num_cols=10240, prob_of_life=0.4, repetitions=10, num_proc_x=32, num_proc_y=32
+Total alive cells: 23908365, Total dead cells: 80949235
+Average time per iteration/repetition: 0.0246086, Total time taken (in parallel app the finish time for slowest proc): 0.246267
+Running in parallel with num_rows=10240, num_cols=10240, prob_of_life=0.6, repetitions=10, num_proc_x=32, num_proc_y=1
+Total alive cells: 12372244, Total dead cells: 92485356
+Average time per iteration/repetition: 0.600271, Total time taken (in parallel app the finish time for slowest proc): 6.00508
+Running in parallel with num_rows=10240, num_cols=10240, prob_of_life=0.6, repetitions=10, num_proc_x=32, num_proc_y=8
+Total alive cells: 12375783, Total dead cells: 92481817
+Average time per iteration/repetition: 0.0763429, Total time taken (in parallel app the finish time for slowest proc): 0.763636
+Running in parallel with num_rows=10240, num_cols=10240, prob_of_life=0.6, repetitions=10, num_proc_x=32, num_proc_y=16
+Total alive cells: 12366950, Total dead cells: 92490650
+Average time per iteration/repetition: 0.0384329, Total time taken (in parallel app the finish time for slowest proc): 0.385453
+Running in parallel with num_rows=10240, num_cols=10240, prob_of_life=0.6, repetitions=10, num_proc_x=32, num_proc_y=32
+Total alive cells: 12378694, Total dead cells: 92478906
+Average time per iteration/repetition: 0.0209993, Total time taken (in parallel app the finish time for slowest proc): 0.210032

@@ -815,11 +815,31 @@ scaling and the other using the weak scaling.
 
 ![runtime_1024.svg](plotting%2Fplots%2Fweak_scaling%2Fruntime_1024.svg)
 
-### 3.3 Parallel with AllToAll collective communication
+### 3.3 Parallel with AllToAll Neighbor collective communication
 
-TBD
+#### 3.3.1 Strong scaling alltoall Neighbor
+
+![runtime_1024.svg](plotting%2Fplots%2Falltoall_strong_scaling%2Fruntime_1024.svg)
+![runtime_10240.svg](plotting%2Fplots%2Falltoall_strong_scaling%2Fruntime_10240.svg)
+![speedup_1024.svg](plotting%2Fplots%2Falltoall_strong_scaling%2Fspeedup_1024.svg)
+![speedup_10240.svg](plotting%2Fplots%2Falltoall_strong_scaling%2Fspeedup_10240.svg)
+![parallel_efficiency_1024.svg](plotting%2Fplots%2Falltoall_strong_scaling%2Fparallel_efficiency_1024.svg)
+![parallel_efficiency_10240.svg](plotting%2Fplots%2Falltoall_strong_scaling%2Fparallel_efficiency_10240.svg)
+
+#### 3.3.2 Weak scaling alltoall Neighbor
+
+![runtime_1024.svg](plotting%2Fplots%2Falltoall_weak_scaling%2Fruntime_1024.svg)
 
 ## 4. Conclusion and Interpretation of results
+
+Based on the benchmarking section, we can conclude the following things:
+1. Larger gridsizes = more stable results (and efficient in the sense)
+2. Weak scaling runtimes are equal, as we have the necessary computational power
+to utilize the grid sizes provided.
+3. The difference between "normal" non-blocking communication and Alltoall neighbor comm.
+
+1. By looking at the speedup and parallel efficiency plots with the different grid sizes of $1024^2$ and $10240^2$,
+it can be seen that when the grid size is larger, the more the application follows the most optimal performance that you can get from the hardware.
 
 
 
