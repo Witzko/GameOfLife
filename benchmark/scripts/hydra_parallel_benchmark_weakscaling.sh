@@ -5,7 +5,7 @@
 #SBATCH --ntasks-per-node=32
 #SBATCH --cpu-freq=High
 #SBATCH --time=10:00
-#SBATCH --output=benchmark/unformatted_outputs/parallel_benchmark_weakscaling_ugly.out
+#SBATCH --output=benchmark/unformatted_outputs/parallel_benchmark_weakscaling_alltoall_ugly.out
 
 executable="./build/parallel"
 
