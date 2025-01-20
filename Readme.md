@@ -2,7 +2,6 @@
 
 A parallized game of life implementation using MPI, for educational purposes. Using both p2p communication and neighbourhood collectives.
 
-# Short report: How to run, what it can (not) do
 ## 1. Project Structure
 
 The project folders are:
